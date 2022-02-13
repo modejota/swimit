@@ -8,6 +8,8 @@ Created on Sun Jan 30 18:02:20 2022
 import cv2 as cv
 from tkinter import Tk, filedialog, simpledialog
 import numpy as np
+# import pybgs as bgs 
+# # Paquete wrapper de una pechá de algoritmos de eliminación de fondos. No consigo instalarlo
 
 Tk().withdraw()
 try:
@@ -43,14 +45,26 @@ top = lane_xy[str(lane)]
 bottom = top + alto_calle
 
 actual_frame = 0
-backSub = cv.createBackgroundSubtractorKNN()
+backSub = cv.createBackgroundSubtractorKNN(detectShadows=False)
+# El utilizar o no la detección de sombras no parece influir en la detección del nadador.
+# No utilizarla proporciona una mejora en rendimiento
 
-def otsu_opencv(frame):
-    blur = cv.GaussianBlur(frame,(5,5),0)
-    _, thre = cv.threshold(blur,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
-    kernel = np.ones((7,7),np.uint8)
-    filtered = cv.morphologyEx(thre,cv.MORPH_CLOSE,kernel)
-    return filtered
+# MOG2 me proporciona mas ruido de primeras, por lo que KNN parece mas apropiado.
+
+
+# Algoritmo GSOC (Google Summer of Code de 2017)
+# Hay más "eliminadores de fondos" en "subpaquetes" de OpenCV, pero segun papers y el propio OpenCV este es el que mejor resultado proporciona
+background_subtr_method = cv.bgsegm.createBackgroundSubtractorGSOC()
+
+
+# Del paquete que soy incapaz de instalar. No parece proporcionar mejores resultados para nuestra casuística segun papers
+# background_subtr_method_subsense = bgs.SuBSENSE()
+
+def aplicar_morfologia(frame):
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (7,3))
+    processing = cv.morphologyEx(frame, cv.MORPH_CLOSE, kernel,iterations = 1)
+    processed = cv.morphologyEx(processing, cv.MORPH_OPEN, kernel,iterations = 1)
+    return processed
 
 while video.isOpened():
 
@@ -61,11 +75,32 @@ while video.isOpened():
     # Se distingue al nadador de manera mucho más clara y con menos ruido, pero el problema es el chapoteo
     sframe = frame[...,1]
     cv.imshow('Cr from [YCrCb]', sframe)
+    
+    """
+    # Aplicar morfologia antes de eliminar fondo (imagen escala de grises)
+    tras_morfologia = aplicar_morfologia(sframe)
+    removed_bg1 = backSub.apply(tras_morfologia)
+    cv.imshow('MORFOLOGIA ANTES DE ELIMINAR FONDO', removed_bg1)
+    """
+    # La documentacion de OpenCV recomienda procesar despues. Ángela lo hacía antes. 
+    # La diferencia no parece demasiado significativa, pero si se hace antes hay como un poco más de grano.
+    """
+    # Aplicar morfologia despue de eliminar fondo
+    removed_bg2 = backSub.apply(sframe)
+    processed = aplicar_morfologia(removed_bg2)
+    cv.imshow('MORFOLOGIA DESPUES DE ELIMINAR FONDO', processed)
+    """
+    
+    # Sin aplicar procesamiento ninguno, es el que mejor mantiene brazos.
+    # Parece que tolera algo más el chapoteo, pero habria que afinarlo más. (Posible suaviado antes o cambiar structuringElement)
+    foreground_mask = background_subtr_method.apply(sframe)
+    gsoc_post_processed = aplicar_morfologia(foreground_mask)
+    cv.imshow('FOREGROUND MASK GSOC',gsoc_post_processed)
 
-    # Modificando OTSU (y su morfologia) probablemente se pueda mejorar más fácil que en HSV
-    process = otsu_opencv(sframe)
-    processed = backSub.apply(process)
-    cv.imshow('BACKGROUND TEST', processed)
+    # Otro método mas. (No consigo instalar paquete)
+    #foreground_mask_subsense = background_subtr_method_subsense.apply(frame)
+    #subsense_post_processed = aplicar_morfologia(foreground_mask_subsense)
+    #cv.imshow('FOREGROUND MASK SUBSENSE', subsense_post_processed)
 
     actual_frame = actual_frame + 1
     
