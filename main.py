@@ -66,6 +66,16 @@ def aplicar_morfologia(frame):
     processed = cv.morphologyEx(processing, cv.MORPH_OPEN, kernel,iterations = 1)
     return processed
 
+# Otra alternativa, confia en que haya grises para intentar obtener mejorar resultado (necesita detectShadows =True)
+# Pero no encuentro diferencia significativa respecto de GSOC
+def knn_post_processed(frame):
+    fg = background_subtr_KNN.apply(frame)
+    fg_blur = cv.GaussianBlur(fg,(7,3),0)
+    _, fg_th = cv.threshold(fg_blur,15,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+    fg_M = aplicar_morfologia(fg_th)
+    return fg_M
+
+
 while video.isOpened():
 
     ok, frame = video.read()
@@ -76,6 +86,7 @@ while video.isOpened():
     sframe = frame[...,1]
     cv.imshow('Cr from [YCrCb]', sframe)
     
+
     """
     # Aplicar morfologia antes de eliminar fondo (imagen escala de grises)
     tras_morfologia = aplicar_morfologia(sframe)
@@ -96,6 +107,9 @@ while video.isOpened():
     fg_gsoc = background_subtr_GSOC.apply(sframe)
     gsoc_post_processed = aplicar_morfologia(fg_gsoc)
     cv.imshow('FOREGROUND MASK GSOC',gsoc_post_processed)
+
+    cv.imshow('GOSC WITH',knn_post_processed(sframe))
+
 
     # Sin aplicar morfología parece que es el que menos ruido introduce por chapoteo.
     # Puede que sea mas facil afirnalo con morfologia
