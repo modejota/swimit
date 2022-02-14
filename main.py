@@ -108,7 +108,8 @@ while video.isOpened():
     gsoc_post_processed = aplicar_morfologia(fg_gsoc)
     cv.imshow('FOREGROUND MASK GSOC',gsoc_post_processed)
 
-    cv.imshow('GOSC WITH',knn_post_processed(sframe))
+    # La otra manera con KNN con emborronamiento y thresholding, no parece haber casi diferencia
+    # cv.imshow('KNN with blur',knn_post_processed(sframe))
 
 
     # Sin aplicar morfología parece que es el que menos ruido introduce por chapoteo.
