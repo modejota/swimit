@@ -105,15 +105,14 @@ while video.isOpened():
     # Sin aplicar procesamiento ninguno, es el que mejor mantiene brazos.
     # Parece que tolera algo más el chapoteo, pero habria que afinarlo más. (Posible suaviado antes o cambiar structuringElement)
     fg_gsoc = background_subtr_GSOC.apply(sframe)
-    gsoc_post_processed = aplicar_morfologia(fg_gsoc)
-    cv.imshow('FOREGROUND MASK GSOC',gsoc_post_processed)
+    # gsoc_post_processed = aplicar_morfologia(fg_gsoc)
+    cv.imshow('FOREGROUND MASK GSOC',fg_gsoc)
 
     # La otra manera con KNN con emborronamiento y thresholding, no parece haber casi diferencia
     # cv.imshow('KNN with blur',knn_post_processed(sframe))
 
 
-    # Sin aplicar morfología parece que es el que menos ruido introduce por chapoteo.
-    # Puede que sea mas facil afirnalo con morfologia
+    # Sin aplicar morfología parece que es el que menos ruido introduce por chapoteo. Puede que sea mas facil afirnalo con morfologia.
     fg_cnt = background_subtr_CNT.apply(sframe)
     #cnt_post_processed = aplicar_morfologia(fg_cnt)
     cv.imshow('FOREGROUND MASK CNT',fg_cnt)
