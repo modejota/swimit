@@ -45,7 +45,7 @@ top = lane_xy[str(lane)]
 bottom = top + alto_calle
 
 actual_frame = 0
-backSub = cv.createBackgroundSubtractorKNN(detectShadows=False)
+background_subtr_KNN = cv.createBackgroundSubtractorKNN(detectShadows=False)
 # El utilizar o no la detección de sombras no parece influir en la detección del nadador.
 # No utilizarla proporciona una mejora en rendimiento
 
@@ -54,11 +54,11 @@ backSub = cv.createBackgroundSubtractorKNN(detectShadows=False)
 
 # Algoritmo GSOC (Google Summer of Code de 2017)
 # Hay más "eliminadores de fondos" en "subpaquetes" de OpenCV, pero segun papers y el propio OpenCV este es el que mejor resultado proporciona
-background_subtr_method = cv.bgsegm.createBackgroundSubtractorGSOC()
-
+background_subtr_GSOC = cv.bgsegm.createBackgroundSubtractorGSOC()
+background_subtr_CNT = cv.bgsegm.createBackgroundSubtractorCNT()
 
 # Del paquete que soy incapaz de instalar. No parece proporcionar mejores resultados para nuestra casuística segun papers
-# background_subtr_method_subsense = bgs.SuBSENSE()
+# background_subtr_GSOC_subsense = bgs.SuBSENSE()
 
 def aplicar_morfologia(frame):
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (7,3))
@@ -79,26 +79,33 @@ while video.isOpened():
     """
     # Aplicar morfologia antes de eliminar fondo (imagen escala de grises)
     tras_morfologia = aplicar_morfologia(sframe)
-    removed_bg1 = backSub.apply(tras_morfologia)
+    removed_bg1 = background_subtr_KNN.apply(tras_morfologia)
     cv.imshow('MORFOLOGIA ANTES DE ELIMINAR FONDO', removed_bg1)
     """
     # La documentacion de OpenCV recomienda procesar despues. Ángela lo hacía antes. 
     # La diferencia no parece demasiado significativa, pero si se hace antes hay como un poco más de grano.
     """
     # Aplicar morfologia despue de eliminar fondo
-    removed_bg2 = backSub.apply(sframe)
+    removed_bg2 = background_subtr_KNN.apply(sframe)
     processed = aplicar_morfologia(removed_bg2)
     cv.imshow('MORFOLOGIA DESPUES DE ELIMINAR FONDO', processed)
     """
     
     # Sin aplicar procesamiento ninguno, es el que mejor mantiene brazos.
     # Parece que tolera algo más el chapoteo, pero habria que afinarlo más. (Posible suaviado antes o cambiar structuringElement)
-    foreground_mask = background_subtr_method.apply(sframe)
-    gsoc_post_processed = aplicar_morfologia(foreground_mask)
+    fg_gsoc = background_subtr_GSOC.apply(sframe)
+    gsoc_post_processed = aplicar_morfologia(fg_gsoc)
     cv.imshow('FOREGROUND MASK GSOC',gsoc_post_processed)
 
+    # Sin aplicar morfología parece que es el que menos ruido introduce por chapoteo.
+    # Puede que sea mas facil afirnalo con morfologia
+    fg_cnt = background_subtr_CNT.apply(sframe)
+    #cnt_post_processed = aplicar_morfologia(fg_cnt)
+    cv.imshow('FOREGROUND MASK CNT',fg_cnt)
+
+
     # Otro método mas. (No consigo instalar paquete)
-    #foreground_mask_subsense = background_subtr_method_subsense.apply(frame)
+    #foreground_mask_subsense = background_subtr_GSOC_subsense.apply(frame)
     #subsense_post_processed = aplicar_morfologia(foreground_mask_subsense)
     #cv.imshow('FOREGROUND MASK SUBSENSE', subsense_post_processed)
 
