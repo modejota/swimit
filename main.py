@@ -68,8 +68,10 @@ while video.isOpened():
 
     actual_frame = actual_frame + 1
     
-    # El bucle se ejecuta hasta el último frame o hasta que se presiona la tecla ESC
     key = cv2.waitKey(1) & 0xff
+    # El bucle se pausa al pulsar P, y se reanuda al pulsar cualquier otra tecla
+    if key == 112: cv2.waitKey(-1)
+    # El bucle se ejecuta hasta el último frame o hasta que se presiona la tecla ESC
     if actual_frame == FRAMES or key == 27: break
     
 video.release()
