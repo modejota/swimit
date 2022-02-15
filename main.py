@@ -55,9 +55,16 @@ while video.isOpened():
     cv2.imshow('Banda Cr de YCrCb', frame)
 
     fg_gsoc = background_subtr_GSOC.apply(frame)
-    cv2.imshow('Eliminacion de fondo con GSOC',fg_gsoc)
 
-    contours = cv2.findContours(fg_gsoc.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    contours = cv2.findContours(fg_gsoc,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    for c in contours:
+        [x,y,w,h] = cv2.boundingRect(c)
+        cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255,255,255), 1)
+        cv2.drawContours(fg_gsoc, [c], 0, (255,255,255), -1)
+
+    cv2.imshow('Contornos tras eliminacion de fondo con GSOC',fg_gsoc)
+
 
     actual_frame = actual_frame + 1
     
