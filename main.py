@@ -43,6 +43,9 @@ top = lane_xy[str(lane)]
 bottom = top + alto_calle
 
 actual_frame = 0
+area_min = 200      # Valores provisionales según Ángela
+area_max = 2500
+altura_corchera = 18    # Este es mio
 
 # Algoritmo GSOC (Google Summer of Code de 2017)
 background_subtr_GSOC = cv2.bgsegm.createBackgroundSubtractorGSOC()
@@ -59,12 +62,12 @@ while video.isOpened():
     contours = cv2.findContours(fg_gsoc,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
     for c in contours:
-        [x,y,w,h] = cv2.boundingRect(c)
-        cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255,255,255), 1)
-        cv2.drawContours(fg_gsoc, [c], 0, (255,255,255), -1)
-
+        if area_min <= cv2.contourArea(c) <= area_max:
+            [x,y,w,h] = cv2.boundingRect(c)
+            if(h>altura_corchera):            # Intentar discriminar corchera en base a su altura
+                rect = cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255,255,255), 1)
+                cv2.drawContours(fg_gsoc, [c], 0, (255,255,255), -1)
     cv2.imshow('Contornos tras eliminacion de fondo con GSOC',fg_gsoc)
-
 
     actual_frame = actual_frame + 1
     
