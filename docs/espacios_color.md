@@ -29,7 +29,26 @@ Utiliza tres componentes:
 
 Los colores se suelen representar mediante un cono. {Adjuntar imagen}
 
-# ¿Por qué elegimos HSV?
+# YCbCr
+
+Es una familia de espacios de color utilizada en sistemas de vídeo y fotografía digital. No es un espacio de color absoluto (los colores son inequívocxos, las interpretaciones de los colores están definidos colorimétricamente sin referencias a factores externos), si no una forma de codificar información RGB.
+
+Utiliza tres componentes para representar los colores:
+- Y: componente de luminancia, también llamado luma.  
+- Cb: componente diferencial de crominancia Y-B, es decir, la diferencia entre luminancia y azul. Se le suele llamar crominancia azul.
+- Cr: componente diferencial de crominancia Y-R, es decir, la diferencia entre luminancia y rojo. Se le suele llamar crominancia roja.
+
+Nótese que no se tiene una componente para la diferencia entre luminancia y verde, esta se deriva de los otros tres valores.
+
+En nuestro problema, nos interesa utilizar la componente Cr de la imagen, dado que la piel del nadador presenta un mayor valor de esta componente que el agua y elementos de la piscina, permitiéndonos ubicar al nadador más fácilmente.
+
+{Se podría añadir sobre las ecuaciones para convertir desde RGB y/o el método de muestreo; o mencionar que parte de la recomendacion ITU-R BT.601}
+
+[https://manualdatecnologia.com/pages/espacios-de-color/ycbcr.html]
+[https://programmerclick.com/article/66951226616/]
+
+
+# ¿Por qué podríamos elegir HSV?
 
 El espacio de color HSV es utilizado en visión por computador debido a su "rendimiento superior" frente a RGB al representar variaciones de los niveles de iluminación. 
 
