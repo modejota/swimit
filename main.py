@@ -45,7 +45,8 @@ bottom = top + alto_calle
 actual_frame = 0
 area_min = 200      # Valores provisionales según Ángela
 area_max = 2500
-altura_corchera = 18    # Este es mio
+altura_corchera = 18    # Estos son mios
+ancho_trampolin = 50
 
 # Algoritmo GSOC (Google Summer of Code de 2017)
 background_subtr_GSOC = cv2.bgsegm.createBackgroundSubtractorGSOC()
@@ -64,7 +65,9 @@ while video.isOpened():
     for c in contours:
         if area_min <= cv2.contourArea(c) <= area_max:
             [x,y,w,h] = cv2.boundingRect(c)
-            if(h>altura_corchera):            # Intentar discriminar corchera en base a su altura
+            # Intentar discriminar corchera en base a su altura y obviar la zona del trampolin
+            # A veces detecta algo de la corchera superior, tendré que ajustar el parametro, o hacerlo en funcion de coordenadas Y
+            if(h>altura_corchera and x>ancho_trampolin):            
                 rect = cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255,255,255), 1)
                 cv2.drawContours(fg_gsoc, [c], 0, (255,255,255), -1)
     cv2.imshow('Contornos tras eliminacion de fondo con GSOC',fg_gsoc)
