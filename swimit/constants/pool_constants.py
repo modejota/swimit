@@ -45,7 +45,7 @@ class PoolValues:
             self.RIGHT_T_X_POSITION = 1140       
             self.CORCHES_HEIGHT = 10         
             self.TRAMPOLIN_WIDTH = 60
-            self.AFTER_JUMPING_X = 300       
+            self.AFTER_JUMPING_X = 300      # Es probable que dependiente de la prueba 
             self.MINIMUM_Y_ROI_LANE = 15     
             self.MAXIMUM_Y_ROI_LANE = 105
 
