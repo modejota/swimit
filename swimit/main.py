@@ -6,14 +6,17 @@ Created on Sun Jan 30 18:02:20 2022
 """
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 from tkinter import Tk, filedialog, simpledialog
+from constants.swimmer_constants import SwimmerValues
+from constants.pool_constants import PoolValues
 from auxiliary_functions import calculate_splits, countours_union
-from constants.analisis_constants import AnalisisValues
 
 Tk().withdraw()
 try:
     vid = filedialog.askopenfilename(initialdir = "./",title = "Seleccione fichero",filetypes = [
+        ("Video files", ".avi .mp4 .flv"),
         ("AVI file", ".avi"),                    
         ("MP4 file", ".mp4"),
         ("FLV file", ".flv"),
@@ -23,19 +26,26 @@ except(OSError,FileNotFoundError):
 except Exception as error:
     print(f'Ha ocurrido un error: <{error}>')
 
-if vid is not None:
-    video = cv2.VideoCapture(vid)
+if len(vid) == 0 or vid is None:
+    print(f'No se ha seleccionado ningún archivo.')
+    quit()
+video = cv2.VideoCapture(vid)
 
+# Pendiente reconocer el tipo de prueba
 splits = calculate_splits(vid)
 if splits == 0:
-    raise ValueError("No se especifica la longitud de la prueba en el nombre del fichero.")
+    print("No se especifica la longitud de la prueba en el nombre del fichero.")
+    quit()
 
 try:
     lane = simpledialog.askinteger(title="Calle", prompt="Calle (1-8):", minvalue=1, maxvalue=8)
-except:
-    print(f'Número de calle inválido. Calle 3 por defecto.') # Valor provisional 
-finally:    
-    lane = 3    # En el doc de Ángela dice que casi todas las calles 3 son buenas.
+except ValueError:
+    print("Se ha introducido un valor incorrecto.")
+    quit()
+
+if lane is None:
+    print("No se ha seleccionado calle a analizar.")
+    quit()
 
 # Estadísticas sobre el vídeo
 frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -46,16 +56,14 @@ actual_frame = 0
 no_contour_detected = 0
 
 # Valores en funcion de la resolucion
-AV = AnalisisValues(original_width,original_height)
-bottom = AV.LANES_Y.get(str(lane))
-top = bottom + AV.LANE_HEIGHT
-
-threshold_brazadas = fps/2  # Freestyle -> Minimo 0.5" entre brazadas
+PV = PoolValues(original_width,original_height)
+SV = SwimmerValues(original_width,original_height)
+bottom = PV.LANES_Y.get(str(lane))
+top = bottom + PV.LANE_HEIGHT
 
 # Vectores para calculo de estadisticas
 height_contour = np.full(frames,None)
 x_coordinates = np.full(frames,None)
-y_coordinates = np.full(frames,None)
 
 # Algoritmo GSOC (Google Summer of Code de 2017)
 background_subtr_GSOC = cv2.bgsegm.createBackgroundSubtractorGSOC()
@@ -73,52 +81,51 @@ while video.isOpened():
     valid_contours = []
 
     for c in contours:
-        if AV.SWIMMER_MIN_AREA <= cv2.contourArea(c) <= AV.SWIMMER_MAX_AREA:
+        if SV.SWIMMER_MIN_AREA <= cv2.contourArea(c) <= SV.SWIMMER_MAX_AREA:
             [x,y,w,h] = cv2.boundingRect(c)
-            # Intentar discriminar corchera en base a su altura y obviar la zona del trampolin. Me guardo contornos validos
-            if(h>AV.CORCHES_HEIGHT and x>AV.TRAMPOLIN_WIDTH and y > AV.MINIMUM_Y_ROI_LANE and y < AV.MAXIMUM_Y_ROI_LANE):            
+            # Discriminar corchera en base a su altura y obviar la zona del trampolin.
+            if(h>PV.CORCHES_HEIGHT and x>PV.TRAMPOLIN_WIDTH and y > PV.MINIMUM_Y_ROI_LANE and y < PV.MAXIMUM_Y_ROI_LANE):            
                 valid_contours.append(c)
 
-    # Ordeno los contornos por area descendente, el nadador será el más grande o la unión de los dos más grandes
+    # Contornos por area descendente, el nadador será el más grande o la unión de los dos más grandes.
     cntsSorted = sorted(valid_contours, key=lambda c: cv2.contourArea(c), reverse=True)
     
-    # Si tengo mas de dos contornos, me quedare con los dos de mayor área
+    # Si tengo mas de dos contornos, me quedare con los dos de mayor área.
     if len(cntsSorted) >= 2:
         [x,y,w,h] = cv2.boundingRect(cntsSorted[0])
         [x2,y2,w2,h2] = cv2.boundingRect(cntsSorted[1])
-        # Compruebo si están muy cerca para unirlos, porque en función del color del bañador, a veces se separa tronco y piernas
         
-        # Mandar parámetros fuera y ajustar longitud maxima. Probablemente sea mejor ajustar en funcion de diferencia de altura
-        if( abs(x-x2) < 20 and abs(y-y2) < 10 and w+w2 < 120): 
-            [x,y,w,h] = countours_union([x,y,w,h],[x2,2,w2,h2])
+        # Compruebo si dichos contornos corresponden a tronco y piernas del nadador. 
+        if( abs(x-x2) < SV.SWIMSUIT_MAX_WIDTH and abs(y-y2) < SV.SWIMMER_HEIGHT_DIFFERENCE and w+w2 < SV.SWIMMER_MAX_WIDTH): 
+            [x,y,w,h] = countours_union([x,y,w,h],[x2,y2,w2,h2])
         
-        if (y>AV.MINIMUM_Y_ROI_LANE and y<AV.MAXIMUM_Y_ROI_LANE and x>AV.AFTER_JUMPING_X) or (y>AV.MINIMUM_Y_ROI_LANE and y<AV.MAXIMUM_Y_ROI_LANE and x>AV.LEFT_T_X_POSITION):
+        # Si el contorno está en el área de interés, guardamos sus posiciones para posterior análsis.
+        if ((y>PV.MINIMUM_Y_ROI_LANE and y<PV.MAXIMUM_Y_ROI_LANE) 
+                or (y>PV.MINIMUM_Y_ROI_LANE and y<PV.MAXIMUM_Y_ROI_LANE and x>PV.LEFT_T_X_POSITION)):
             x_coordinates[actual_frame] = x
-            y_coordinates[actual_frame] = y
             height_contour[actual_frame] = h
         
         cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255,255,255), 1)   
         cv2.drawContours(fg_gsoc, [c], 0, (255,255,255), -1)
     
     # Si tengo un único contorno tengo al nadador perfectamente reconocido, o por lo menos el tronco superior.
-    # Salvo quizás durante el salto al agua, que el gran chapoteo puede reconocerse
     elif len(cntsSorted) == 1:
         [x,y,w,h] = cv2.boundingRect(cntsSorted[0])
         cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255,255,255), 1)   
         cv2.drawContours(fg_gsoc, [c], 0, (255,255,255), -1)
-
-        if (y>AV.MINIMUM_Y_ROI_LANE and y<AV.MAXIMUM_Y_ROI_LANE and x>AV.AFTER_JUMPING_X) or (y>AV.MINIMUM_Y_ROI_LANE and y<AV.MAXIMUM_Y_ROI_LANE and x>AV.LEFT_T_X_POSITION):
+       
+        # Si el contorno está en el área de interés, guardamos sus posiciones para posterior análsis.
+        if ((y>PV.MINIMUM_Y_ROI_LANE and y<PV.MAXIMUM_Y_ROI_LANE) 
+                or (y>PV.MINIMUM_Y_ROI_LANE and y<PV.MAXIMUM_Y_ROI_LANE and x>PV.LEFT_T_X_POSITION)):
             x_coordinates[actual_frame] = x
-            y_coordinates[actual_frame] = y
             height_contour[actual_frame] = h
 
-    # Si no hay contornos no detecta nadador, ni nada, obviamente
     else:
-        no_contour_detected = no_contour_detected + 1
+        no_contour_detected+=1
 
     cv2.imshow('Contornos tras procesamiento',fg_gsoc)
 
-    actual_frame = actual_frame + 1
+    actual_frame+=1
     
     key = cv2.waitKey(1) & 0xff
     # El bucle se pausa al pulsar P, y se reanuda al pulsar cualquier otra tecla
@@ -126,12 +133,8 @@ while video.isOpened():
     # El bucle se ejecuta hasta el último frame o hasta que se presiona la tecla ESC
     if actual_frame == frames or key == 27: break
 
-
 # Estadísticas y obtención de resultados
 print('Frames sin contornos detectados: %d' % no_contour_detected)
-
-# sentido_nado(x_coordinates,fps)
-
 
 video.release()
 cv2.destroyAllWindows()
