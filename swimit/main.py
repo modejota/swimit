@@ -18,6 +18,7 @@ from constants.split_constants import SplitValues
 from constants.swimmer_constants import SwimmerValues
 
 Tk().withdraw()
+vid = None
 try:
     vid = filedialog.askopenfilename(initialdir="./", title="Seleccione fichero", filetypes=[
         ("Video files", ".avi .mp4 .flv"),
@@ -36,6 +37,7 @@ if len(vid) == 0 or vid is None:
 video = cv2.VideoCapture(vid)
 
 # Pendiente reconocer el tipo de prueba
+lane = 0
 splits = calculate_splits(vid)
 if splits == 0:
     print("No se especifica la longitud de la prueba en el nombre del fichero.")
@@ -89,7 +91,7 @@ while video.isOpened():
         if SWV.SWIMMER_MIN_AREA <= cv2.contourArea(c) <= SWV.SWIMMER_MAX_AREA:
             [x, y, w, h] = cv2.boundingRect(c)
             # Discriminar corchera en base a su altura y obviar la zona del trampolin.
-            if (h > PV.CORCHES_HEIGHT and x > PV.TRAMPOLIN_WIDTH and PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE):
+            if h > PV.CORCHES_HEIGHT and x > PV.TRAMPOLIN_WIDTH and PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE:
                 valid_contours.append(c)
 
     # Contornos por area descendente, el nadador será el más grande o la unión de los dos más grandes.
@@ -101,13 +103,13 @@ while video.isOpened():
         [x2, y2, w2, h2] = cv2.boundingRect(cntsSorted[1])
 
         # Compruebo si dichos contornos corresponden a tronco y piernas del nadador. 
-        if ( abs(x - x2) < SWV.SWIMSUIT_MAX_WIDTH and 
-             abs(y - y2) < SWV.SWIMMER_HEIGHT_DIFFERENCE and 
-             w + w2 < SWV.SWIMMER_MAX_WIDTH):
+        if (abs(x - x2) < SWV.SWIMSUIT_MAX_WIDTH and
+                abs(y - y2) < SWV.SWIMMER_HEIGHT_DIFFERENCE and
+                w + w2 < SWV.SWIMMER_MAX_WIDTH):
             [x, y, w, h] = countours_union([x, y, w, h], [x2, y2, w2, h2])
 
         # Si el contorno está en el área de interés, guardamos sus posiciones para posterior análsis.
-        if (PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE):
+        if PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE:
             x_coordinates[actual_frame] = x
             height_contour[actual_frame] = h
 
@@ -121,7 +123,7 @@ while video.isOpened():
         cv2.drawContours(fg_gsoc, [c], 0, (255, 255, 255), -1)
 
         # Si el contorno está en el área de interés, guardamos sus posiciones para posterior análsis.
-        if (PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE):
+        if PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE:
             x_coordinates[actual_frame] = x
             height_contour[actual_frame] = h
 
@@ -134,9 +136,11 @@ while video.isOpened():
 
     key = cv2.waitKey(1) & 0xff
     # El bucle se pausa al pulsar P, y se reanuda al pulsar cualquier otra tecla
-    if key == 112: cv2.waitKey(-1)
+    if key == 112:
+        cv2.waitKey(-1)
     # El bucle se ejecuta hasta el último frame o hasta que se presiona la tecla ESC
-    if actual_frame == frames or key == 27: break
+    if actual_frame == frames or key == 27:
+        break
 
 # Estadísticas y obtención de resultados
 print('Frames sin contornos detectados: %d' % no_contour_detected)
@@ -193,8 +197,10 @@ for i in range(1, splits + 1):
     # 3.1- Extraer las coordenadas X y alturas.
     xs = x_coordinates_detected[indexes[i - 1]:indexes[i]]
     hs = height_contour_detected[indexes[i - 1]:indexes[i]]
-    # 3.2. Establecer condiciones para saber frames extremo de la ROI. # (TO DO -> Ajustar parámetros basándome en más vídeos, a veces falla)
-    # Idealmente, habria que considerar de forma distinta el primer split, ya que el salto recorre mas espacio y "falsea" el primer split
+    # 3.2. Establecer condiciones para saber frames extremo de la ROI.
+    # (TO DO -> Ajustar parámetros basándome en más vídeos, a veces falla)
+    # Idealmente, habria que considerar de forma distinta el primer split,
+    # ya que el salto recorre mas espacio y "falsea" el primer split
     if i % 2:  # Derecha a izquierda
         first_ind = min(element for element in xs if element >= PV.RIGHT_T_X_POSITION - 200 and element > 0)
         last_ind = min(element for element in xs if PV.LEFT_T_X_POSITION + 200 >= element > 0)
