@@ -10,6 +10,7 @@ from tkinter import Tk, filedialog, simpledialog
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import copy
 from scipy.signal import savgol_filter, find_peaks
 
 from auxiliary_functions import calculate_splits, countours_union
@@ -146,8 +147,22 @@ while video.isOpened():
 print('Frames sin contornos detectados: %d' % no_contour_detected)
 
 # 1. Procesar coordenadas en las que no se detectó al nadador.
-x_coordinates_detected = np.array([0 if i is None else i for i in x_coordinates], dtype=np.int32)
-height_contour_detected = np.array([0.0 if i is None else float(i) for i in height_contour], dtype=np.float32)
+x_coordinates_detected = copy.deepcopy(x_coordinates)        # Eliminacion de Nones, a partir de aqui, al calculador se le ha ido la flapa
+height_contour_detected = copy.deepcopy(height_contour)
+for i in range(0, frames):
+    if isinstance(x_coordinates[i], type(None)):
+        if i > 0:
+            x_coordinates_detected[i] = x_coordinates_detected[i-1]
+        else:
+            x_coordinates_detected[i] = 0
+    if isinstance(height_contour[i], type(None)):
+        if i > 0:
+            height_contour_detected[i] = height_contour_detected[i-1]
+        else:
+            height_contour_detected[i] = 0.0
+
+# x_coordinates_detected = np.array([0 if i is None else i for i in x_coordinates], dtype=np.int32)
+# height_contour_detected = np.array([0.0 if i is None else float(i) for i in height_contour], dtype=np.float32)
 
 # 2. Hallar índices de los frames en los que se cambia de sentido con respecto del vídeo original.
 # (En el suavizado eliminamos los Nones, el find_peaks "puede proporcionar resultados imprevistos", si están)
