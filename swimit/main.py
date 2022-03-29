@@ -5,14 +5,13 @@ Created on Sun Jan 30 18:02:20 2022
 @author: modejota   |   José Alberto Gómez García
 """
 
-from tkinter import Tk, filedialog, simpledialog
 
+import sys
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import copy
+from tkinter import Tk, filedialog, simpledialog
 from scipy.signal import savgol_filter, find_peaks
-
 from auxiliary_functions import calculate_splits, countours_union
 from constants.pool_constants import PoolValues
 from constants.split_constants import SplitValues
@@ -21,38 +20,29 @@ from constants.swimmer_constants import SwimmerValues
 Tk().withdraw()
 vid = None
 try:
-    vid = filedialog.askopenfilename(initialdir="./", title="Seleccione fichero", filetypes=[
+    vid = filedialog.askopenfilename(initialdir="../sample_videos", title="Seleccione fichero", filetypes=[
         ("Video files", ".avi .mp4 .flv"),
         ("AVI file", ".avi"),
         ("MP4 file", ".mp4"),
         ("FLV file", ".flv"),
     ])
 except(OSError, FileNotFoundError):
-    print(f'No se ha podido abrir el fichero seleccionado.')
+    sys.exit(f'No se ha podido abrir el fichero seleccionado.')
 except Exception as error:
-    print(f'Ha ocurrido un error: <{error}>')
-
+    sys.exit(f'Ha ocurrido un error: <{error}>')
 if len(vid) == 0 or vid is None:
-    print(f'No se ha seleccionado ningún archivo.')
-    quit()
+    sys.exit(f'No se ha seleccionado ningún archivo.')
+
 video = cv2.VideoCapture(vid)
 
-# Pendiente reconocer el tipo de prueba
-lane = 0
 splits = calculate_splits(vid)
 if splits == 0:
-    print("No se especifica la longitud de la prueba en el nombre del fichero.")
-    quit()
+    sys.exit(f'No se especifica la longitud de la prueba en el nombre del fichero.')
 
-try:
-    lane = simpledialog.askinteger(title="Calle", prompt="Calle (1-8):", minvalue=1, maxvalue=8)
-except ValueError:
-    print("Se ha introducido un valor incorrecto.")
-    quit()
-
+lane = simpledialog.askinteger(title="Calle", prompt="Calle (1-8):", minvalue=1, maxvalue=8)
 if lane is None:
-    print("No se ha seleccionado calle a analizar.")
-    quit()
+    sys.exit(f'No se ha seleccionado calle a analizar.')
+# Pendiente reconocer el tipo de prueba
 
 # Estadísticas sobre el vídeo
 frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -62,16 +52,18 @@ height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 actual_frame = 0
 no_contour_detected = 0
 
-# Valores en funcion de la resolucion
+# Valores provenientes de las dataclasses
 PV = PoolValues()
 SWV = SwimmerValues()
-SPV = SplitValues("freestyle", fps)
+SPV = SplitValues("freestyle", fps)  # Testeando butterfly en verdad, temporal
+
+# Get the bottom and top coordinates of a lane
 bottom = PV.LANES_Y.get(str(lane))
 top = bottom + PV.LANE_HEIGHT
 
 # Vectores para calculo de estadisticas
-height_contour = np.full(frames, None)
-x_coordinates = np.full(frames, None)
+height_contour = np.full(frames, np.NaN)
+x_coordinates = np.full(frames, np.NaN)
 
 # Algoritmo GSOC (Google Summer of Code de 2017)
 background_subtr_GSOC = cv2.bgsegm.createBackgroundSubtractorGSOC()
@@ -96,14 +88,14 @@ while video.isOpened():
                 valid_contours.append(c)
 
     # Contornos por area descendente, el nadador será el más grande o la unión de los dos más grandes.
-    cntsSorted = sorted(valid_contours, key=lambda c: cv2.contourArea(c), reverse=True)
+    cntsSorted = sorted(valid_contours, key=lambda contour: cv2.contourArea(contour), reverse=True)
 
     # Si tengo mas de dos contornos, me quedare con los dos de mayor área.
     if len(cntsSorted) >= 2:
         [x, y, w, h] = cv2.boundingRect(cntsSorted[0])
         [x2, y2, w2, h2] = cv2.boundingRect(cntsSorted[1])
 
-        # Compruebo si dichos contornos corresponden a tronco y piernas del nadador. 
+        # Compruebo si dichos contornos corresponden a tronco y piernas del nadador.
         if (abs(x - x2) < SWV.SWIMSUIT_MAX_WIDTH and
                 abs(y - y2) < SWV.SWIMMER_HEIGHT_DIFFERENCE and
                 w + w2 < SWV.SWIMMER_MAX_WIDTH):
@@ -115,13 +107,11 @@ while video.isOpened():
             height_contour[actual_frame] = h
 
         cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255, 255, 255), 1)
-        cv2.drawContours(fg_gsoc, [c], 0, (255, 255, 255), -1)
 
     # Si tengo un único contorno tengo al nadador perfectamente reconocido, o por lo menos el tronco superior.
     elif len(cntsSorted) == 1:
         [x, y, w, h] = cv2.boundingRect(cntsSorted[0])
         cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255, 255, 255), 1)
-        cv2.drawContours(fg_gsoc, [c], 0, (255, 255, 255), -1)
 
         # Si el contorno está en el área de interés, guardamos sus posiciones para posterior análsis.
         if PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE:
@@ -147,111 +137,84 @@ while video.isOpened():
 print('Frames sin contornos detectados: %d' % no_contour_detected)
 
 # 1. Procesar coordenadas en las que no se detectó al nadador.
-x_coordinates_detected = copy.deepcopy(x_coordinates)        # Eliminacion de Nones, a partir de aqui, al calculador se le ha ido la flapa
-height_contour_detected = copy.deepcopy(height_contour)
+x_coordinates_detected = np.copy(x_coordinates)
+height_contour_detected = np.copy(height_contour)
 for i in range(0, frames):
-    if isinstance(x_coordinates[i], type(None)):
+    if np.isnan(x_coordinates_detected[i]):
         if i > 0:
-            x_coordinates_detected[i] = x_coordinates_detected[i-1]
+            x_coordinates_detected[i] = x_coordinates_detected[i - 1]
         else:
             x_coordinates_detected[i] = 0
-    if isinstance(height_contour[i], type(None)):
+    if np.isnan(height_contour_detected[i]):
         if i > 0:
-            height_contour_detected[i] = height_contour_detected[i-1]
+            height_contour_detected[i] = height_contour_detected[i - 1]
         else:
             height_contour_detected[i] = 0.0
 
-# x_coordinates_detected = np.array([0 if i is None else i for i in x_coordinates], dtype=np.int32)
-# height_contour_detected = np.array([0.0 if i is None else float(i) for i in height_contour], dtype=np.float32)
-
 # 2. Hallar índices de los frames en los que se cambia de sentido con respecto del vídeo original.
-# (En el suavizado eliminamos los Nones, el find_peaks "puede proporcionar resultados imprevistos", si están)
-sentido = [i for i in x_coordinates if i is not None]
+sentido = [i for i in x_coordinates if not np.isnan(i)]
 sentidoS = savgol_filter(sentido, (2 * round(fps)) + 1, 1)
 peaks, _ = find_peaks(sentidoS, distance=SPV.SPLIT_MIN_FRAMES, width=11)
 peaks_I, _ = find_peaks(sentidoS * -1, distance=SPV.SPLIT_MIN_FRAMES, width=11)
 
-magnitud = [sentidoS[peaks[i]] for i in range(0, len(peaks))]
-plt.figure()
-plt.plot(sentido)
-plt.plot(np.arange(0, frames)[peaks], magnitud, marker='o')
-"""
-"""  # Graficas "no estrictamente necesarias", por ahora son para mostrar
-magnitud_I = [sentidoS[peaks_I[i]] for i in range(0, len(peaks_I))]
-plt.figure()
-plt.plot(sentido)
-plt.plot(np.arange(0, frames)[peaks_I], magnitud_I, marker='o')
-
 indexes = []
-first_index = 0
-last_index = 0
 peaks_coordinates_sentido = list(sentido[p] for p in peaks) + list(sentido[p] for p in peaks_I)
 for i, x in enumerate(x_coordinates):
-    if x in peaks_coordinates_sentido and not any(
-            t in indexes for t in range(i - SPV.SPLIT_MIN_FRAMES // 2, i + SPV.SPLIT_MIN_FRAMES // 2)):
+    if x in peaks_coordinates_sentido and \
+            not any(t in indexes for t in range(i - SPV.SPLIT_MIN_FRAMES // 2, i + SPV.SPLIT_MIN_FRAMES // 2)):
         indexes.append(i)
-for i, x in enumerate(x_coordinates_detected):
-    if x > PV.AFTER_JUMPING_X:
-        first_index = i
-        break
-for i, x in reversed(list(enumerate(x_coordinates_detected))):
-    if x > 0:
-        last_index = i
-        break
+first_index = np.where(x_coordinates_detected > PV.AFTER_JUMPING_X)[0][0]
+last_index = np.where(x_coordinates_detected > 0)[0][-1]
 indexes = np.append(np.insert(np.sort(indexes), 0, first_index), last_index)
 
-# En principio, tdo esto no lo necesito, para mostrar por ahora los graficos y aclararme
-magnitud_G = [x_coordinates[indexes[i]] for i in range(0, len(indexes))]
-plt.figure()
-plt.plot(x_coordinates)
-plt.plot(np.arange(0, frames)[indexes], magnitud_G, marker='o')
-
 brazadas_min_total = 0.0
+x_axis = np.arange(0, frames)
 # 3. Cálculos en función del split.
 for i in range(1, splits + 1):
-    # 3.1- Extraer las coordenadas X y alturas.
-    xs = x_coordinates_detected[indexes[i - 1]:indexes[i]]
-    hs = height_contour_detected[indexes[i - 1]:indexes[i]]
-    # 3.2. Establecer condiciones para saber frames extremo de la ROI.
-    # (TO DO -> Ajustar parámetros basándome en más vídeos, a veces falla)
-    # Idealmente, habria que considerar de forma distinta el primer split,
-    # ya que el salto recorre mas espacio y "falsea" el primer split
-    if i % 2:  # Derecha a izquierda
-        first_ind = min(element for element in xs if element >= PV.RIGHT_T_X_POSITION - 200 and element > 0)
-        last_ind = min(element for element in xs if PV.LEFT_T_X_POSITION + 200 >= element > 0)
-    else:  # Izquierda a derecha
-        first_ind = min(element for element in xs if element >= PV.LEFT_T_X_POSITION + 200 and element > 0)
-        last_ind = min(element for element in xs if element >= PV.RIGHT_T_X_POSITION - 200 and element > 0)
+    # 3.1- Extraer las coordenadas X y alturas del split en cuestión.
+    xs = x_coordinates_detected[indexes[i-1]:indexes[i]]
+    hs = height_contour_detected[indexes[i-1]:indexes[i]]
+    # 3.2 Esteblecer los frames extremos de la región de interés.
+    if i == 1:  # Primer split (izquierda a derecha)
+        first_index = xs[np.where(xs >= PV.AFTER_JUMPING_X)[0][0]]
+        last_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][-1]]
+    elif i % 2 == 0:  # Splits pares (derecha a izquierda)
+        first_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][0]]
+        last_index = xs[np.where(xs >= PV.LEFT_T_X_POSITION)[0][-1]]
+    else:  # Splits impares (izquierda a derecha)
+        first_index = xs[np.where(xs >= PV.LEFT_T_X_POSITION)[0][0]]
+        last_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][-1]]
 
-    hs_significativa = 1.3 * np.mean(hs)
-    # 3.3. Hallar brazadas a partir de variaciones significativas en la altura de la caja que rodea al nadador
-    hs_suavizado = savgol_filter(hs, 17, 2)
-    peaks, _ = find_peaks(hs_suavizado, distance=SPV.THRESHOLD_BRAZADAS)
-    true_peaks = [peak for peak in peaks if
-                  hs_suavizado[peak] >= hs_significativa]  # Ajustar parametro, aunque parece funcionar bien así
+    # 3.3- Hallar brazadas a partir de las variaciones significativas de las alturas.
+    hs_significativa = np.mean(hs)
+    # La clave está en este este suavizado de la curva de alturas.
+    hs_suavizado = savgol_filter(hs, 55, 2)
+    peaks, _ = find_peaks(hs_suavizado, distance=SPV.THRESHOLD_BRAZADAS, width=9)
+    true_peaks = [peak for peak in peaks if hs_suavizado[peak] >= hs_significativa]
+    # Ahora mismo esto parece funcionar correctamente para butterfly, sin probar para el resto.
 
-    magnitud_vuelta = [hs_suavizado[true_peaks[i]] for i in range(len(true_peaks))]
+    magnitud = [hs_suavizado[true_peaks[i]] for i in range(0, len(true_peaks))]
     plt.figure()
-    plt.plot(np.arange(0, frames)[indexes[i - 1]:indexes[i]], hs, label='H original')
-    plt.plot(np.arange(0, frames)[indexes[i - 1]:indexes[i]], hs_suavizado, label='H suavizada')
-    plt.plot(np.arange(0, frames)[indexes[i - 1]:indexes[i]][true_peaks], magnitud_vuelta, marker="o", ls="", ms=3,
-             label='Brazada')
-    plt.title('Variación de H en T25_01')
-    plt.ylabel('H (píxeles)')
-    plt.xlabel('Frame')
+    plt.plot(x_axis[indexes[i-1]:indexes[i]], hs_suavizado, label="H Suavizada")
+    plt.plot(x_axis[indexes[i-1]:indexes[i]][true_peaks], magnitud, marker="o", ls="", ms=3, label='Peak')
+    plt.title("Alturas y brazadas en split %d" % i)
+    plt.ylabel("Altura (pixeles)")
+    plt.xlabel("Frame")
     plt.show()
 
-    # 3.4- Calcular tiempo en ROI.
-    time_ROI = abs(last_ind - first_ind) / fps
-    # 3.5. Calcular brazadas por minuto en funcion de picos y tiempo en ROI
-    brazadas_min = "{:.3f}".format((len(true_peaks) * 60) / time_ROI)
-    print('T25: ' + str(brazadas_min) + ' brazadas/minuto')
-    # 3.6. Acumular brazadas por minuto calculadas para hacer media entre splits.
-    brazadas_min_total += float(brazadas_min)
+    # 3.4. Calcular tiempo en ROI.
+    time_ROI = abs(last_index - first_index) / fps
+    # 3.5. Calcular brazadas por minuto en función de true_peaks y time_ROI
+    brazadas_min = len(peaks) * 60 / time_ROI
+    # Imprimir indices de los splits y brazadas por minuto.
+    print('Split %d: %.2f brazadas por minuto.' % (i, brazadas_min))
+    print('Split %d: %d brazadas en %.2f segundos. \n' % (i, len(true_peaks), time_ROI))
+    # 3.6. Calcular brazadas totales.
+    brazadas_min_total += brazadas_min
 
-# 4. Hacer media entre splits de las brazadas por minuto
+# 4. Hacer media entre las brazadas por minuto de todos los splits.
 brazadas_min_total /= splits
-print('TTotal: ' + str("{:.3f}".format(brazadas_min_total)) + ' brazadas/minuto')
+print('Media a lo largo de la prueba: %.2f brazadas por minuto' % brazadas_min_total)
 
 video.release()
 cv2.destroyAllWindows()
