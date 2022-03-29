@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from constants.resolution_constants import ResolutionValues
 
 
 @dataclass(frozen=True)
