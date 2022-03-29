@@ -1,6 +1,5 @@
-
 from dataclasses import dataclass
-from constants.resolution_constants import ResolutionValues
+
 
 @dataclass
 class SplitValues:
@@ -22,11 +21,9 @@ class SplitValues:
     REGEX_PATTERN = '_([\d]*)m_'
     DISTANCE = 25
 
-    def __init__(self,tipo_prueba,fps):
+    def __init__(self, tipo_prueba, fps):
         self.THRESHOLD_BRAZADAS = 0
         self.SPLIT_MIN_FRAMES = 0
         if tipo_prueba == "freestyle":
-            self.THRESHOLD_BRAZADAS = fps/2
+            self.THRESHOLD_BRAZADAS = fps / 2
         self.SPLIT_MIN_FRAMES = 350
-
-
