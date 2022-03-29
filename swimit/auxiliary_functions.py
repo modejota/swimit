@@ -1,7 +1,8 @@
 import re
 from constants.split_constants import SplitValues
 
-def countours_union(a,b):
+
+def countours_union(a, b):
     """
     Obtiene el rectángulo que contiene a otros dos rectángulos dados.
     Parameters
@@ -17,9 +18,10 @@ def countours_union(a,b):
     """
     x = min(a[0], b[0])
     y = min(a[1], b[1])
-    w = max(a[0]+a[2], b[0]+b[2]) - x
-    h = max(a[1]+a[3], b[1]+b[3]) - y
+    w = max(a[0] + a[2], b[0] + b[2]) - x
+    h = max(a[1] + a[3], b[1] + b[3]) - y
     return (x, y, w, h)
+
 
 def calculate_splits(videoname):
     """
@@ -34,8 +36,8 @@ def calculate_splits(videoname):
         Número de splits de la prueba.
     """
     splits = 0
-    match = re.search(SplitValues.REGEX_PATTERN,videoname)
+    match = re.search(SplitValues.REGEX_PATTERN, videoname)
     if match:
-        total_distance = match.group(1)           
-        splits = int(total_distance) // SplitValues.DISTANCE      
+        total_distance = match.group(1)
+        splits = int(total_distance) // SplitValues.DISTANCE
     return splits
