@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True)
 class PoolValues:
     """
@@ -27,15 +28,12 @@ class PoolValues:
         Posicion en el eje Y máxima para considerar que el nadador está en la región de interés, relativa a la calle. (No debe pegarse a la corchera)
     """
 
-    LANE_HEIGHT = 120                
-    LANES_Y = {"1": 670,"2": 580,"3": 485,"4": 387,"5": 285,"6":190,"7":100,"8":0}
-    LEFT_T_X_POSITION = 170         
-    RIGHT_T_X_POSITION = 1140       
-    CORCHES_HEIGHT = 10         
+    LANE_HEIGHT = 120
+    LANES_Y = {"1": 670, "2": 580, "3": 485, "4": 387, "5": 285, "6": 190, "7": 100, "8": 0}
+    LEFT_T_X_POSITION = 170
+    RIGHT_T_X_POSITION = 1140
+    CORCHES_HEIGHT = 10
     TRAMPOLIN_WIDTH = 60
-    AFTER_JUMPING_X = 300      
-    MINIMUM_Y_ROI_LANE = 15     
-    MAXIMUM_Y_ROI_LANE = 105
-
-
-
+    AFTER_JUMPING_X = 300
+    MINIMUM_Y_ROI_LANE = 12
+    MAXIMUM_Y_ROI_LANE = 108
