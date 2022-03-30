@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from constants.resolution_constants import ResolutionValues
 
 
-@dataclass
+@dataclass(frozen=True)
 class SwimmerValues:
     """
     Objeto que almacenará diferentes parámetros propios de un nadador.
@@ -21,20 +20,8 @@ class SwimmerValues:
         Máxima área para considerar válido el contorno.
     """
 
-    """
-    Constructor de la clase
-    Parameters
-    ----------
-    width : int
-        Ancho en píxeles del vídeo.
-    height : int
-        Alto en píxeles del vídeo.
-    """
-
-    def __init__(self,width,height):
-        if width == ResolutionValues.HALF_WIDTH and height == ResolutionValues.HALF_HEIGHT:
-            self.SWIMSUIT_MAX_WIDTH = 22
-            self.SWIMMER_HEIGHT_DIFFERENCE = 12
-            self.SWIMMER_MAX_WIDTH = 115
-            self.SWIMMER_MIN_AREA = 200
-            self.SWIMMER_MAX_AREA = 2500
+    SWIMSUIT_MAX_WIDTH = 22
+    SWIMMER_HEIGHT_DIFFERENCE = 12
+    SWIMMER_MAX_WIDTH = 115
+    SWIMMER_MIN_AREA = 200
+    SWIMMER_MAX_AREA = 2500

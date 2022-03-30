@@ -1,0 +1,15 @@
+# Análsis de los datos hecho el reconocimiento de contornos:
+- 1. Eliminar coordenadas en las que no se detectó al nadador.
+- 2. Hallar índice de los frames del vídeo original en los que el nadador cambia de sentido. Se tendrá que añadir al principio el primer frame donde se detecta algún contorno, y al final el último frame donde se detecta algún contorno.
+- 3. Para cada split (comenzando a numerar en 1):  
+    - 3.1. A partir de los índices anteriores, extraer las coordenadas X y alturas de los contornos para el split.
+    - 3.2. Establecer condiciones para saber frames extremo de la ROI en función de si el split es impar (izq -> der) o el split es par (izq <- der).
+    - 3.3. Con coordenadas X y alturas extraídas:
+        - 3.3.1. Aplicar suavizado de la curva de alturas.
+        - 3.3.2. Hallar brazadas teniendo en cuenta variacion de altura de la bounding box y frecuenca minima de nado. Entendemos las brazadas como los picos en la gráfica.
+        - 3.3.3. Hallar picos realmente significativos, brazadas reales.
+        - 3.3.4. Calcular las gráficas, opcional.
+    - 3.4. Calcular tiempo durante el que se nada en la ROI
+    - 3.5. Calcular brazadas por minuto dentro de la ROI
+    - 3.6. Acumular valor para media entre splits.
+- 4. Hacer media de las brazadas por minuto de cada split

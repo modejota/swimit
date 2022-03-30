@@ -17,10 +17,15 @@ La fórmula se encuentra en la web, y en esta,
 |A| y |B| son el número de muestras de los conjuntos de mismo nombre, respectivamente, mientras que C es el número de especies compartidas por las dos muestras.
 
 El coeficiente de similitud varía entre 0 y 1.
-Es una métrica similar a Jaccard, pero con algunas diferencias. (INVESTIGAR MÁS)
-Parece ser más apropiado para distribuciones muy desequilibradas
+Es una métrica similar a Jaccard, pero con algunas diferencias. (INVESTIGAR MÁS, en función del paper mencionan que son diferentes o que son "tremendamente similares".)
+Parece ser más apropiado para distribuciones muy desequilibradas.
 
 [https://towardsdatascience.com/the-f1-score-bec2bbc38aa6]
 
 ## Link
 [https://towardsdatascience.com/metrics-to-evaluate-your-semantic-segmentation-model-6bcb99639aa2](Para ambos indices)
+
+De la reunión del 14 de marzo:
+-   Establecer la medida de la bondad a partir del rectángulo contorno y un rectángulo manual. 
+-   Recortar a lo largo de una calle dada y calcular la métrica para dicha calle.
+-   De lo anterior se deduce que no buscamos reconocer píxeles individuales del nadador dentro del propio contorno
