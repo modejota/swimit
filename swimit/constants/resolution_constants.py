@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True)
 class ResolutionValues:
     """
@@ -16,8 +17,9 @@ class ResolutionValues:
     FULL_RESOLUTION_HEIGHT: int
         Alto en píxeles de los vídeos a máxima resolución.
     """
+    NORMAL_FRAME_RATE = 42
 
-    HALF_WIDTH = 1292  
+    HALF_WIDTH = 1292
     HALF_HEIGHT = 816
 
     FULL_WIDTH = 2584
