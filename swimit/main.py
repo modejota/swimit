@@ -93,6 +93,8 @@ while video.isOpened():
                 frame = cv2.resize(frame, (ResolutionValues.HALF_WIDTH, ResolutionValues.HALF_HEIGHT))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)[bottom:top, :][..., 1]
 
+            # cv2.imshow('Frame original', frame)
+
             fg_gsoc = background_subtr_GSOC.apply(frame)
 
             contours = cv2.findContours(fg_gsoc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -155,7 +157,7 @@ while video.isOpened():
 
 # Estadísticas y obtención de resultados
 print('\nFrames sin contornos detectados: %d' % no_contour_detected)
-print('Tiempo total de ejecución: %.2f segundos' % (time.time() - start_time))
+print('Tiempo total de ejecución: %.2f segundos\n' % (time.time() - start_time))
 
 
 # 1. Procesar coordenadas en las que no se detectó al nadador.
@@ -184,17 +186,26 @@ indexes = []
 peaks_coordinates_sentido = list(sentido[p] for p in peaks) + list(sentido[p] for p in peaks_I)
 first_index = np.where(x_coordinates_detected > PV.AFTER_JUMPING_X)[0][0]
 indexes.append(first_index)
-for i, x in enumerate(x_coordinates):
+for i, x in enumerate(x_coordinates_detected):  # Originalmente, sin detected
     if x in peaks_coordinates_sentido and \
             not any(t in indexes for t in range(i - SPV.SPLIT_MIN_FRAMES // 2, i + SPV.SPLIT_MIN_FRAMES // 2)):
         indexes.append(i)
-last_index = np.where(x_coordinates_detected > 0)[0][-1]
+last_index = np.where(x_coordinates_detected > PV.LEFT_T_X_POSITION)[0][-1]
 indexes = np.append(np.sort(indexes), last_index)
 
 brazadas_min_total = 0.0
 x_axis = np.arange(0, frames)
+
+# TO be deleted
+magnitud_G = [x_coordinates_detected[indexes[i]] for i in range(0,len(indexes))]
+plt.figure()
+plt.plot(x_coordinates_detected)
+plt.plot(x_axis[indexes],magnitud_G,marker='o')
+plt.show()
+
 # 3. Cálculos en función del split.
-for i in range(1, splits + 1):
+# Necesitamos el número de picos porque el nadador no tiene porqué completar el split -> num_peaks != num_splits.
+for i in range(1, len(peaks_coordinates_sentido) + 1):
     # 3.1- Extraer las coordenadas X y alturas del split en cuestión.
     xs = x_coordinates_detected[indexes[i - 1]:indexes[i]]
     hs = height_contour_detected[indexes[i - 1]:indexes[i]]
@@ -237,7 +248,7 @@ for i in range(1, splits + 1):
     brazadas_min_total += brazadas_min
 
 # 4. Hacer media entre las brazadas por minuto de todos los splits.
-brazadas_min_total /= splits
+brazadas_min_total /= len(peaks_coordinates_sentido)
 print('Media a lo largo de la prueba: %.2f brazadas por minuto' % brazadas_min_total)
 
 video.release()
