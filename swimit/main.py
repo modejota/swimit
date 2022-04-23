@@ -51,9 +51,9 @@ frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 fps = video.get(cv2.CAP_PROP_FPS)
 width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-actual_frame = 0
-current_frame = 0
-no_contour_detected = 0
+frames_processed = 0
+frames_read = 0
+frames_with_no_contour = 0
 
 # Valores provenientes de las dataclasses
 PV = PoolValues()
@@ -81,18 +81,18 @@ x_coordinates = np.full(frames, np.NaN)
 background_subtr_GSOC = cv2.bgsegm.createBackgroundSubtractorGSOC()
 
 start_time = time.time()
+# Lectura de frames. Eliminación de fondo y detección de contornos
 while video.isOpened():
 
     ok, frame = video.read()
     if ok:
         # Reducir el framerate antes de procesar nada mas, para reducir tiempo de ejecucion y conservar memoria
-        if current_frame % fps_factor != 0:
-            current_frame += 1
+        if frames_read % fps_factor != 0:
+            frames_read += 1
         else:
             if need_to_resize:
                 frame = cv2.resize(frame, (ResolutionValues.HALF_WIDTH, ResolutionValues.HALF_HEIGHT))
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)[bottom:top, :][..., 1]
-
             # cv2.imshow('Frame original', frame)
 
             fg_gsoc = background_subtr_GSOC.apply(frame)
@@ -125,8 +125,8 @@ while video.isOpened():
 
                 # Si el contorno está en el área de interés, guardamos sus posiciones para posterior análsis.
                 if PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE:
-                    x_coordinates[actual_frame] = x
-                    height_contour[actual_frame] = h
+                    x_coordinates[frames_processed] = x
+                    height_contour[frames_processed] = h
 
                 cv2.rectangle(fg_gsoc, (x, y), (x + w, y + h), (255, 255, 255), 1)
 
@@ -137,78 +137,97 @@ while video.isOpened():
 
                 # Si el contorno está en el área de interés, guardamos sus posiciones para posterior análsis.
                 if PV.MINIMUM_Y_ROI_LANE < y < PV.MAXIMUM_Y_ROI_LANE:
-                    x_coordinates[actual_frame] = x
-                    height_contour[actual_frame] = h
+                    x_coordinates[frames_processed] = x
+                    height_contour[frames_processed] = h
 
             else:
-                no_contour_detected += 1
+                frames_with_no_contour += 1
 
             # cv2.imshow('Contornos tras procesamiento', fg_gsoc)
-            actual_frame += 1
-            current_frame += 1
-        print(f'\rProcesando frame {current_frame} de {frames}.', end='')
+            frames_processed += 1
+            frames_read += 1
+        print(f'\rProcesando frame {frames_read} de {frames}.', end='')
         key = cv2.waitKey(1) & 0xff
         # El bucle se pausa al pulsar P, y se reanuda al pulsar cualquier otra tecla
         if key == 112:
             cv2.waitKey(-1)
         # El bucle se ejecuta hasta el último frame o hasta que se presiona la tecla ESC
-        if current_frame == frames or key == 27:
+        if frames_read == frames or key == 27:
             break
 
 # Estadísticas y obtención de resultados
-print('\nFrames sin contornos detectados: %d' % no_contour_detected)
+print('\nFrames sin contornos detectados: %d' % frames_with_no_contour)
 print('Tiempo total de ejecución: %.2f segundos\n' % (time.time() - start_time))
 
+# Análisis de los resultados
 
 # 1. Procesar coordenadas en las que no se detectó al nadador.
-# Problema con los índices, se me cuela por uno.
-x_coordinates_detected = np.copy(x_coordinates)
-height_contour_detected = np.copy(height_contour)
-for i in range(0, frames):
-    if np.isnan(x_coordinates_detected[i]):
+for i in range(frames):
+    if np.isnan(x_coordinates[i]):
         if i > 0:
-            x_coordinates_detected[i] = x_coordinates_detected[i - 1]
+            x_coordinates[i] = x_coordinates[i - 1]
         else:
-            x_coordinates_detected[i] = 0
-    if np.isnan(height_contour_detected[i]):
+            x_coordinates[i] = 0
+    if np.isnan(height_contour[i]):
         if i > 0:
-            height_contour_detected[i] = height_contour_detected[i - 1]
+            height_contour[i] = height_contour[i - 1]
         else:
-            height_contour_detected[i] = 0.0
+            height_contour[i] = 0.0
 
-# 2. Hallar índices de los frames en los que se cambia de sentido con respecto del vídeo original.
-sentido = [i for i in x_coordinates if not np.isnan(i)]
-sentidoS = savgol_filter(sentido, (2 * round(fps)) + 1, 1)
-peaks, _ = find_peaks(sentidoS, distance=SPV.SPLIT_MIN_FRAMES, width=11)
-peaks_I, _ = find_peaks(sentidoS * -1, distance=SPV.SPLIT_MIN_FRAMES, width=11)
+# 2. Hallar índices y Xs de los frames en los que se cambia de sentido con respecto del vídeo original.
+x_coordinates_smooth = savgol_filter(x_coordinates, (2 * round(fps)) + 1, 1)
+peaks = list(np.concatenate((
+    find_peaks(x_coordinates_smooth, distance=SPV.SPLIT_MIN_FRAMES, width=11)[0],
+    find_peaks(x_coordinates_smooth * -1, distance=SPV.SPLIT_MIN_FRAMES, width=11)[0]
+)))
+x_coordinates_of_peaks = [x_coordinates[p] for p in peaks]
+
+# El suavizado del final del vídeo puede crear un falso pico. (Hecho para detectar seguidos, aunque no me ha pasado)
+if len(x_coordinates_of_peaks) > splits:
+    for i in range(len(x_coordinates_of_peaks) - splits):
+        if abs(x_coordinates_of_peaks[-1] - x_coordinates_of_peaks[-2]) < 20:
+            if abs(x_coordinates_of_peaks[-1]) > abs(x_coordinates_of_peaks[-2]):
+                x_coordinates_of_peaks.pop()
+                peaks.pop()
+            else:
+                x_coordinates_of_peaks.pop(-2)
+                peaks.pop(-2)
+
+#  El nadador no tiene porqué completar el split, hay grabaciones en las que se corta.
+if len(x_coordinates_of_peaks) != splits:
+    iterations = len(x_coordinates_of_peaks)+1
+else:
+    iterations = splits+1
 
 indexes = []
-peaks_coordinates_sentido = list(sentido[p] for p in peaks) + list(sentido[p] for p in peaks_I)
-first_index = np.where(x_coordinates_detected > PV.AFTER_JUMPING_X)[0][0]
+first_index = np.where(x_coordinates > PV.AFTER_JUMPING_X)[0][0]
 indexes.append(first_index)
-for i, x in enumerate(x_coordinates_detected):  # Originalmente, sin detected
-    if x in peaks_coordinates_sentido and \
+for i, x in enumerate(x_coordinates):
+    if x in x_coordinates_of_peaks and \
             not any(t in indexes for t in range(i - SPV.SPLIT_MIN_FRAMES // 2, i + SPV.SPLIT_MIN_FRAMES // 2)):
         indexes.append(i)
-last_index = np.where(x_coordinates_detected > PV.LEFT_T_X_POSITION)[0][-1]
+last_index = np.where(x_coordinates > 0)[0][-1]
 indexes = np.append(np.sort(indexes), last_index)
 
 brazadas_min_total = 0.0
 x_axis = np.arange(0, frames)
 
-# TO be deleted
-magnitud_G = [x_coordinates_detected[indexes[i]] for i in range(0,len(indexes))]
-plt.figure()
-plt.plot(x_coordinates_detected)
-plt.plot(x_axis[indexes],magnitud_G,marker='o')
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(x_axis, x_coordinates, 'b')
+ax.plot(x_axis, x_coordinates_smooth, 'r')
+ax.plot(x_axis[peaks], x_coordinates_smooth[peaks], 'ro', markersize=5, label='Cambio de sentido')
+ax.set_xlabel('Frame')
+ax.set_ylabel('Coordenadas X')
+ax.set_title('Sentido del movimiento')
+ax.legend(['Sin suavizar', 'Suavizado'])
+ax.grid(True)
 plt.show()
 
 # 3. Cálculos en función del split.
-# Necesitamos el número de picos porque el nadador no tiene porqué completar el split -> num_peaks != num_splits.
-for i in range(1, len(peaks_coordinates_sentido) + 1):
+for i in range(1, iterations):
     # 3.1- Extraer las coordenadas X y alturas del split en cuestión.
-    xs = x_coordinates_detected[indexes[i - 1]:indexes[i]]
-    hs = height_contour_detected[indexes[i - 1]:indexes[i]]
+    xs = x_coordinates[indexes[i - 1]:indexes[i]]
+    hs = height_contour[indexes[i - 1]:indexes[i]]
     # 3.2 Esteblecer los frames extremos de la región de interés.
     if i == 1:  # Primer split (izquierda a derecha)
         first_index = xs[np.where(xs >= PV.AFTER_JUMPING_X)[0][0]]
@@ -238,7 +257,7 @@ for i in range(1, len(peaks_coordinates_sentido) + 1):
     plt.show()
 
     # 3.4. Calcular tiempo en ROI.
-    time_ROI = abs(last_index - first_index) / fps
+    time_ROI = abs(last_index - first_index) / ResolutionValues.NORMAL_FRAME_RATE
     # 3.5. Calcular brazadas por minuto en función de true_peaks y time_ROI
     brazadas_min = len(peaks) * 60 / time_ROI
     # Imprimir indices de los splits y brazadas por minuto.
@@ -248,7 +267,7 @@ for i in range(1, len(peaks_coordinates_sentido) + 1):
     brazadas_min_total += brazadas_min
 
 # 4. Hacer media entre las brazadas por minuto de todos los splits.
-brazadas_min_total /= len(peaks_coordinates_sentido)
+brazadas_min_total /= (iterations-1)
 print('Media a lo largo de la prueba: %.2f brazadas por minuto' % brazadas_min_total)
 
 video.release()
