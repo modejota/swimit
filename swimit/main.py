@@ -44,7 +44,7 @@ if splits == 0:
 lane = simpledialog.askinteger(title="Calle", prompt="Calle (1-8):", minvalue=1, maxvalue=8)
 if lane is None:
     sys.exit(f'No se ha seleccionado calle a analizar.')
-# Pendiente reconocer el tipo de prueba
+# Pendiente reconocer el tipo de prueba, puede que ni llegue a hacer falta.
 
 # Estadísticas sobre el vídeo
 frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -69,7 +69,7 @@ if fps >= ResolutionValues.NORMAL_FRAME_RATE:
     fps_factor = math.ceil(fps / ResolutionValues.NORMAL_FRAME_RATE)
     frames = int(frames // fps_factor)
 
-# Get the bottom and top coordinates of a lane
+# Coordenadas Y de la calle a analizar
 bottom = PV.LANES_Y.get(str(lane))
 top = bottom + PV.LANE_HEIGHT
 
@@ -198,6 +198,7 @@ if len(x_coordinates_of_peaks) != splits:
     iterations = len(x_coordinates_of_peaks)+1
 else:
     iterations = splits+1
+valid_splits = iterations-1
 
 indexes = []
 first_index = np.where(x_coordinates > PV.AFTER_JUMPING_X)[0][0]
@@ -213,61 +214,72 @@ brazadas_min_total = 0.0
 x_axis = np.arange(0, frames)
 
 fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(x_axis, x_coordinates, 'b')
-ax.plot(x_axis, x_coordinates_smooth, 'r')
+ax.plot(x_axis, x_coordinates, 'b', label="Coordenadas X")
+ax.plot(x_axis, x_coordinates_smooth, 'r', label="Coordenadas X suavizadas")
 ax.plot(x_axis[peaks], x_coordinates_smooth[peaks], 'ro', markersize=5, label='Cambio de sentido')
 ax.set_xlabel('Frame')
 ax.set_ylabel('Coordenadas X')
 ax.set_title('Sentido del movimiento')
-ax.legend(['Sin suavizar', 'Suavizado'])
+ax.legend(loc='upper right')
 ax.grid(True)
 plt.show()
 
 # 3. Cálculos en función del split.
 for i in range(1, iterations):
     # 3.1- Extraer las coordenadas X y alturas del split en cuestión.
-    xs = x_coordinates[indexes[i - 1]:indexes[i]]
-    hs = height_contour[indexes[i - 1]:indexes[i]]
-    # 3.2 Esteblecer los frames extremos de la región de interés.
-    if i == 1:  # Primer split (izquierda a derecha)
-        first_index = xs[np.where(xs >= PV.AFTER_JUMPING_X)[0][0]]
-        last_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][-1]]
-    elif i % 2 == 0:  # Splits pares (derecha a izquierda)
-        first_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][0]]
-        last_index = xs[np.where(xs >= PV.LEFT_T_X_POSITION)[0][-1]]
-    else:  # Splits impares (izquierda a derecha)
-        first_index = xs[np.where(xs >= PV.LEFT_T_X_POSITION)[0][0]]
-        last_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][-1]]
+    try:
+        xs = x_coordinates[indexes[i - 1]:indexes[i]]
+        hs = height_contour[indexes[i - 1]:indexes[i]]
+        # 3.2 Esteblecer los frames extremos de la región de interés.
+        if i == 1:  # Primer split (izquierda a derecha)
+            first_index = xs[np.where(xs >= PV.AFTER_JUMPING_X)[0][0]]
+            last_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][-1]]
+        elif i % 2 == 0:  # Splits pares (derecha a izquierda)
+            first_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][0]]
+            last_index = xs[np.where(xs >= PV.LEFT_T_X_POSITION)[0][-1]]
+        else:  # Splits impares (izquierda a derecha)
+            first_index = xs[np.where(xs >= PV.LEFT_T_X_POSITION)[0][0]]
+            last_index = xs[np.where(xs <= PV.RIGHT_T_X_POSITION)[0][-1]]
 
-    # 3.3- Hallar brazadas a partir de las variaciones significativas de las alturas.
-    hs_significativa = np.mean(hs)
-    # La clave está en este este suavizado de la curva de alturas.
-    hs_suavizado = savgol_filter(hs, 55, 2)
-    peaks, _ = find_peaks(hs_suavizado, distance=SPV.THRESHOLD_BRAZADAS, width=9)
-    true_peaks = [peak for peak in peaks if hs_suavizado[peak] >= hs_significativa]
-    # Ahora mismo esto parece funcionar correctamente para butterfly, sin probar para el resto.
+        # 3.3- Hallar brazadas a partir de las variaciones significativas de las alturas.
+        hs_significativa = np.mean(hs)
+        # La clave está en este este suavizado de la curva de alturas.
+        hs_suavizado = savgol_filter(hs, 55, 2)
+        peaks, _ = find_peaks(hs_suavizado, distance=SPV.THRESHOLD_BRAZADAS, width=9)
+        true_peaks = [peak for peak in peaks if hs_suavizado[peak] >= hs_significativa]
+        # Ahora mismo esto parece funcionar correctamente para butterfly, sin probar para el resto.
 
-    magnitud = [hs_suavizado[true_peaks[i]] for i in range(0, len(true_peaks))]
-    plt.figure()
-    plt.plot(x_axis[indexes[i - 1]:indexes[i]], hs_suavizado, label="H Suavizada")
-    plt.plot(x_axis[indexes[i - 1]:indexes[i]][true_peaks], magnitud, marker="o", ls="", ms=3, label='Peak')
-    plt.title("Alturas y brazadas en split %d" % i)
-    plt.ylabel("Altura (pixeles)")
-    plt.xlabel("Frame")
-    plt.show()
+        magnitud = [hs_suavizado[true_peaks[i]] for i in range(len(true_peaks))]
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(x_axis[indexes[i-1]:indexes[i]], hs_suavizado, 'b', label="Altura suavizada")
+        ax.plot(x_axis[indexes[i-1]:indexes[i]][true_peaks], magnitud, 'ro', ls="", markersize=4, label="Brazadas")
+        ax.set_xlabel('Frame')
+        ax.set_ylabel('Altura en píxeles')
+        ax.set_title('Variación de altura de la brazada. Spit %d' % i)
+        ax.legend(loc='upper right')
+        ax.grid(True)
+        plt.show()
 
-    # 3.4. Calcular tiempo en ROI.
-    time_ROI = abs(last_index - first_index) / ResolutionValues.NORMAL_FRAME_RATE
-    # 3.5. Calcular brazadas por minuto en función de true_peaks y time_ROI
-    brazadas_min = len(peaks) * 60 / time_ROI
-    # Imprimir indices de los splits y brazadas por minuto.
-    print('Split %d: %.2f brazadas por minuto.' % (i, brazadas_min))
-    print('Split %d: %d brazadas en %.2f segundos. \n' % (i, len(true_peaks), time_ROI))
-    # 3.6. Calcular brazadas totales.
-    brazadas_min_total += brazadas_min
+        # 3.4. Calcular tiempo en ROI.
+        time_ROI = abs(last_index - first_index) / ResolutionValues.NORMAL_FRAME_RATE
+        # 3.5. Calcular brazadas por minuto en función de true_peaks y time_ROI
+        brazadas_min = len(peaks) * 60 / time_ROI
+        # 3.6. Calcular brazadas totales.
+        brazadas_min_total += brazadas_min
 
-# 4. Hacer media entre las brazadas por minuto de todos los splits.
-brazadas_min_total /= (iterations-1)
+        # Imprimir indices de los splits y brazadas por minuto.
+        print('Split %d: %.2f brazadas por minuto.' % (i, brazadas_min))
+        print('Split %d: %d brazadas en %.2f segundos. \n' % (i, len(true_peaks), time_ROI))
+
+    except IndexError as e:
+        valid_splits -= 1
+        print("Error en split %d. No hay nadador detectado en zona central de la piscina. " % i)
+        continue
+    # Find_peaks no levanta excepciones, pero avisa de que algunos picos pueden ser "menos importantes" de lo esperado.
+    # except RuntimeWarning as w:
+
+# 4. Hacer media entre las brazadas por minuto de todos los splits válidos.
+brazadas_min_total /= valid_splits
 print('Media a lo largo de la prueba: %.2f brazadas por minuto' % brazadas_min_total)
 
 video.release()
