@@ -263,7 +263,7 @@ for i in range(1, iterations):
         # 3.4. Calcular tiempo en ROI.
         time_ROI = abs(last_index - first_index) / ResolutionValues.NORMAL_FRAME_RATE
         # 3.5. Calcular brazadas por minuto en función de true_peaks y time_ROI
-        brazadas_min = len(peaks) * 60 / time_ROI
+        brazadas_min = len(true_peaks) * 60 / time_ROI
         # 3.6. Calcular brazadas totales.
         brazadas_min_total += brazadas_min
 
