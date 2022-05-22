@@ -133,3 +133,8 @@ sample_videos/
 
 # Results of analisis
 results/
+
+# YOLOv4 big files and training set
+yolov4/training/
+yolov4/darknet/data/obj/
+yolov4/darknet/yolov4.conv.137
