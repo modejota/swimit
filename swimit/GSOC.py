@@ -55,7 +55,8 @@ class GSOC:
         elif self.args.video is not None:
             self.video = cv2.VideoCapture(self.args.video)
         else:
-            sys.exit('No se ha especificado ningún video')
+            print("No se ha especificado ningún video")
+            sys.exit(102)
 
         # Estadísticas sobre el vídeo.
         frames = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
