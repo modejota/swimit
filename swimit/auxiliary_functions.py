@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 from scipy.signal import savgol_filter, find_peaks
-from constants.pool_constants import PoolValues as PV
-from constants.resolution_constants import ResolutionValues as RV
+from swimit.constants.pool_constants import PoolValues as PV
+from swimit.constants.resolution_constants import ResolutionValues as RV
 
 
 

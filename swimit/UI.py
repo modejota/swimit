@@ -1,6 +1,6 @@
 import sys
 from tkinter import Tk, filedialog, simpledialog
-from constants.yolov4_paths_constants import YOLOv4Paths as YV4P
+from swimit.constants.yolov4_paths_constants import YOLOv4Paths as YV4P
 
 
 class UI:
