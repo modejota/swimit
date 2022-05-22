@@ -1,12 +1,15 @@
 import re
 import os
+import sys
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
 from pathlib import Path
 from scipy.signal import savgol_filter, find_peaks
-from swimit.constants.pool_constants import PoolValues as PV
-from swimit.constants.resolution_constants import ResolutionValues as RV
+from constants.pool_constants import PoolValues as PV
+from constants.resolution_constants import ResolutionValues as RV
+
 
 
 def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: bool,
@@ -32,13 +35,6 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
     anchuras: np.ndarray
         Array con las anchuras de los contornos del nadador en cada frame del vídeo.
     """
-
-    # Hallar nombre del vídeo para conformar despúes nombre de otros ficheros.
-    videofilename = Path(videofilename).stem
-    # Crear directorio separado para resultados.
-    if not os.path.exists("../results"):
-        os.mkdir("../results")
-    os.chdir("../results")
 
     # 1. Procesar coordenadas en las que no se detectó al nadador.
     for i in range(frames):
@@ -70,16 +66,28 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
     splits_reales = len(coordenadas_picos) if len(coordenadas_picos) != splits_esperados else splits_esperados
 
     indices = []
-    primer_indice = np.where(coordenadas > PV.AFTER_JUMPING_X)[0][0]
-    indices.append(primer_indice)
-    # Correspondencia entre coordenada del pico y número de frame donde se produce.
-    # El pico y el número de frame donde se produce nos sirven si no hubo ninguno cerca.
-    for i, x in enumerate(coordenadas):
-        if x in coordenadas_picos and \
-                not any(t in indices for t in range(i - PV.SPLIT_MIN_FRAMES // 2, i + PV.SPLIT_MIN_FRAMES // 2)):
-            indices.append(i)
-    ultimo_indice = np.where(coordenadas > 0)[0][-1]
-    indices = np.append(np.sort(indices), ultimo_indice)
+    try:
+        primer_indice = np.where(coordenadas > PV.AFTER_JUMPING_X)[0][0]
+        indices.append(primer_indice)
+        # Correspondencia entre coordenada del pico y número de frame donde se produce.
+        # El pico y el número de frame donde se produce nos sirven si no hubo ninguno cerca.
+        for i, x in enumerate(coordenadas):
+            if x in coordenadas_picos and \
+                    not any(t in indices for t in range(i - PV.SPLIT_MIN_FRAMES // 2, i + PV.SPLIT_MIN_FRAMES // 2)):
+                indices.append(i)
+        ultimo_indice = np.where(coordenadas > 0)[0][-1]
+        indices = np.append(np.sort(indices), ultimo_indice)
+    except IndexError:
+        print(f"No se ha podido encontrar al nadador en la región de interés durante todo el vídeo.\n"
+              f"¿Está seguro de que alguien está nadando en la calle seleccionada?")
+        sys.exit(109)
+
+    # Hallar nombre del vídeo para conformar despúes nombre de otros ficheros.
+    videofilename = Path(videofilename).stem
+    # Crear directorio separado para resultados.
+    if not os.path.exists("../results"):
+        os.mkdir("../results")
+    os.chdir("../results")
 
     if save:
         # Asegurar el directorio para guardar gráficas y resultado del análisis.
@@ -203,3 +211,40 @@ def calcular_splits(videoname: str) -> int:
         total_distance = match.group(1)
         splits = int(total_distance) // PV.REAL_POOL_LENGTH
     return splits
+
+
+def redimensionar_imagen(image, width=None, height=None, inter=cv2.INTER_AREA):
+    """
+    Función para redimensionar una imagen de manera que mantenga la proporcion.
+    Parameters
+    ---------
+    image: numpy.ndarray
+        Imagen a redimensionar.
+    width: int
+        Ancho de la imagen que se desea que tenga la imagen redimensionada.
+    height: int
+        Alto de la imagen que se desea que tenga la imagen redimensionada.
+    inter: int
+        Tipo de interpolación a utilizar.
+
+    Returns
+    ------
+    resized: numpy.ndarray
+        Imagen redimensionada.
+    """
+
+    (h, w) = image.shape[:2]
+
+    # No se indican dimensiones, devolvemos original
+    if width is None and height is None:
+        return image
+
+    # Comprobamos que dimensión se especifica y la otra se calcula manteniendo la proporción
+    if width is None:
+        r = height / float(h)
+        dim = (int(w * r), height)
+    else:
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    return cv2.resize(image, dim, interpolation=inter)
