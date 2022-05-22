@@ -8,19 +8,14 @@ class ResolutionValues:
 
     Attributes
     ----------
+    NORMAL_FRAME_RATE: int
+        Frame rate de los vídeos grabados en resolución normal.
     HALF_RESOLUTION_WIDTH: int
         Ancho en píxeles de los vídeos a media resolución.
     HALF_RESOLUTION_HEIGHT: int
         Alto en píxeles de los vídeos a media resolución.
-    FULL_RESOLUTION_WIDTH: int
-        Ancho en píxeles de los vídeos a resolución máxima.
-    FULL_RESOLUTION_HEIGHT: int
-        Alto en píxeles de los vídeos a máxima resolución.
     """
     NORMAL_FRAME_RATE = 42
 
     HALF_WIDTH = 1292
     HALF_HEIGHT = 816
-
-    FULL_WIDTH = 2584
-    FULL_HEIGHT = 1632
