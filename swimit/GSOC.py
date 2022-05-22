@@ -97,6 +97,7 @@ class GSOC:
                     frame = cv2.cvtColor(original_frame, cv2.COLOR_BGR2YCrCb)[..., 1]
 
                     # Aplicar substracción de fondo, lo que nos devuelve la variación de la imagen.
+                    timer = time.time()
                     gsocfg = self.gsocbs.apply(frame)
 
                     contornos = cv2.findContours(gsocfg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -158,7 +159,8 @@ class GSOC:
 
                     frames_leidos += 1
                     frames_procesados += 1
-                print(f'\rProcesando frame {frames_leidos} de {frames}.', end='')
+                    end_timer = "{:0.4f}".format(1 / (time.time() - timer))
+                print(f'\rProcesando frame {frames_leidos} de {frames}. Velocidad: {end_timer} FPS.', end='')
 
                 key = cv2.waitKey(1) & 0xff
                 # El bucle se pausa al pulsar P, y se reanuda al pulsar cualquier otra tecla
