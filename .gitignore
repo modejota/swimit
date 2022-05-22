@@ -130,3 +130,6 @@ dmypy.json
 
 # Sample videos
 sample_videos/
+
+# Results of analisis
+results/
