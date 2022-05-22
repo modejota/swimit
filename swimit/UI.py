@@ -1,5 +1,6 @@
 import sys
 from tkinter import Tk, filedialog, simpledialog
+from constants.yolov4_paths_constants import YOLOv4Paths as YV4P
 
 
 class UI:
@@ -24,6 +25,57 @@ class UI:
             print(f'No se ha seleccionado ningún archivo.')
             sys.exit(102)
         return vid
+
+    @staticmethod
+    def askforcfgfile():
+        Tk().withdraw()
+        try:
+            cfg = filedialog.askopenfilename(initialdir=YV4P.DEFAULT_CFG_DIRECTORY, title="Seleccione fichero",
+                                             filetypes=[("Config files", ".cfg")])
+        except(OSError, FileNotFoundError):
+            print(f'No se ha podido abrir el fichero seleccionado.')
+            sys.exit(100)
+        except Exception as error:
+            print(f'Ha ocurrido un error: <{error}>')
+            sys.exit(101)
+        if len(cfg) == 0 or cfg is None:
+            print(f'No se ha seleccionado ningún archivo.')
+            sys.exit(102)
+        return cfg
+
+    @staticmethod
+    def askforweightsfile():
+        Tk().withdraw()
+        try:
+            weights = filedialog.askopenfilename(initialdir=YV4P.DEFAULT_WEIGHTS_DIRECTORY, title="Seleccione fichero",
+                                                 filetypes=[("Weights files", ".weights")])
+        except(OSError, FileNotFoundError):
+            print(f'No se ha podido abrir el fichero seleccionado.')
+            sys.exit(100)
+        except Exception as error:
+            print(f'Ha ocurrido un error: <{error}>')
+            sys.exit(101)
+        if len(weights) == 0 or weights is None:
+            print(f'No se ha seleccionado ningún archivo.')
+            sys.exit(102)
+        return weights
+
+    @staticmethod
+    def askfornamesfile():
+        Tk().withdraw()
+        try:
+            names = filedialog.askopenfilename(initialdir=YV4P.DEFAULT_NAMES_DIRECTORY, title="Seleccione fichero",
+                                               filetypes=[("Names files", ".names")])
+        except(OSError, FileNotFoundError):
+            print(f'No se ha podido abrir el fichero seleccionado.')
+            sys.exit(100)
+        except Exception as error:
+            print(f'Ha ocurrido un error: <{error}>')
+            sys.exit(101)
+        if len(names) == 0 or names is None:
+            print(f'No se ha seleccionado ningún archivo.')
+            sys.exit(102)
+        return names
 
     @staticmethod
     def askforlanenumber():
@@ -55,3 +107,25 @@ class UI:
                 print(f'No se ha seleccionado ninguna opción.')
                 sys.exit(102)
         return True if save == "S" else False
+
+    @staticmethod
+    def askforgpu():
+        Tk().withdraw()
+        use_gpu = ""
+        while use_gpu != 'S' and use_gpu != 'N' and use_gpu is not None:
+            use_gpu = simpledialog.askstring(title="Usar GPU", prompt="Usar GPU (S/N):")
+            if use_gpu is None:
+                print(f'No se ha seleccionado ninguna opción.')
+                sys.exit(102)
+        return True if use_gpu == "S" else False
+
+    @staticmethod
+    def askforoverride():
+        Tk().withdraw()
+        override = ""
+        while override != 'S' and override != 'N' and override is not None:
+            override = simpledialog.askstring(title="Sobrescribir", prompt="Sobrescribir datos (S/N):")
+            if override is None:
+                print(f'No se ha seleccionado ninguna opción.')
+                sys.exit(102)
+        return True if override == "S" else False
