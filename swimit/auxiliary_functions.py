@@ -40,7 +40,7 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
         os.mkdir("../results")
     os.chdir("../results")
 
-    # 1. Procesar coordenasdas en las que no se detectó al nadador.
+    # 1. Procesar coordenadas en las que no se detectó al nadador.
     for i in range(frames):
         if np.isnan(coordenadas[i]):
             coordenadas[i] = coordenadas[i - 1] if i > 0 else 0
@@ -73,7 +73,7 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
     primer_indice = np.where(coordenadas > PV.AFTER_JUMPING_X)[0][0]
     indices.append(primer_indice)
     # Correspondencia entre coordenada del pico y número de frame donde se produce.
-    # El pico y el número de frame donde se produce nos sirven si no hubo ninguno ceca.
+    # El pico y el número de frame donde se produce nos sirven si no hubo ninguno cerca.
     for i, x in enumerate(coordenadas):
         if x in coordenadas_picos and \
                 not any(t in indices for t in range(i - PV.SPLIT_MIN_FRAMES // 2, i + PV.SPLIT_MIN_FRAMES // 2)):

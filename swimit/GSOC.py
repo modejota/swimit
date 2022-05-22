@@ -163,7 +163,7 @@ class GSOC:
                 # El bucle se pausa al pulsar P, y se reanuda al pulsar cualquier otra tecla
                 if key == 112:
                     cv2.waitKey(-1)
-                # El bucle se ejecuta hasta el último frame o hasta qu se presiona la tecla ESC
+                # El bucle se ejecuta hasta el último frame o hasta que se presiona la tecla ESC
                 if frames_leidos == frames or key == 27:
                     break
 
