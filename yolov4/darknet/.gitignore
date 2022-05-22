@@ -11,7 +11,7 @@
 *.dylib
 *.pyc
 mnist/
-data/
+data/obj/
 caffe/
 grasp/
 images/
@@ -19,7 +19,6 @@ opencv/
 convnet/
 decaf/
 submission/
-cfg/
 temp/
 build/darknet/*
 build_*/
