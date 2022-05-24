@@ -13,6 +13,21 @@ from swimit.auxiliary_functions import calcular_splits, analizar_datos_video, re
 
 
 class YOLOv4:
+    """
+    Clase que implementa el procesamiento de un video con red neuronal YOLOv4
+
+    Attributes
+    ----------
+    net: cv2.dnn_DetectionModel
+        Red neuronal de YOLOv4
+    args: argparse.Namespace
+        Argumentos del programa.
+        --gui marca el uso de interfaz gráfica, el resto pueden obtenerse por línea de comandos o por la propia GUI.
+    video: cv2.VideoCapture
+        Video a procesar
+    names: str
+        Ruta del archivo de nombres de YOLOv4
+    """
 
     def __init__(self):
         """ Método al que se llama cuando se crea un objeto """
@@ -24,61 +39,48 @@ class YOLOv4:
 
         self.parse_arguments()
         if self.args is not None and self.args.gui:
-            videofilename = UI.askforvideofile()
-            lanenumber = UI.askforlanenumber()
-            save = UI.askforsavegraphs()
-            show = UI.askforshowprocessing()
-            cfg = UI.askforcfgfile()
-            weights = UI.askforweightsfile()
-            names = UI.askfornamesfile()
-            gpu = UI.askforgpu()
-            if cfg is not None and weights is not None and names is not None and gpu is not None:
-                self.initialize_network_parameters(cfg, weights, names, gpu)
-            if videofilename is not None and lanenumber is not None and save is not None and show is not None:
-                self.process_video(videofilename, lanenumber, save, show)
-        elif self.args is not None:
-            self.initialize_network_parameters(self.args.cfg, self.args.weights, self.args.names, self.args.gpu)
-            self.process_video(self.args.video, self.args.calle, self.args.guardar, self.args.mostrar)
+            self.args.video = UI.askforvideofile()
+            self.args.calle = UI.askforlanenumber()
+            self.args.guardar = UI.askforsavegraphs()
+            self.args.mostrar = UI.askforshowprocessing()
+            self.args.cfg = UI.askforcfgfile()
+            self.args.weights = UI.askforweightsfile()
+            self.args.names = UI.askfornamesfile()
+            self.args.gpu = UI.askforgpu()
+        self.initialize_network_parameters()
+        self.process_video()
 
     def parse_arguments(self):
         """ Método para parsear argumentos """
 
         parser = argparse.ArgumentParser(description='Deteccion de nadadores usando YOLOv4')
-        parser.add_argument('-g', '--gui', action='store_true', help='Usar GUI', default=False)
-        if not parser.parse_args().gui:
-            parser.add_argument('-v', '--video', type=str, help='Nombre del video', required=True)
-            parser.add_argument('-c', '--calle', type=int, help='Número de calle', required=True)
-            parser.add_argument('--mostrar', action='store_true',
-                                help='Mostrar vídeo durante el procesamiento', default=False)
-            parser.add_argument('--guardar', action='store_true',
-                                help='Guardar gráficas tras procesamiento', default=False)
-            parser.add_argument('--cfg', help='Archivo de configuración de YOLO',
-                                required=False, default=YV4P.DEFAULT_CFG_FILE)
-            parser.add_argument('--weights', help='Archivo de pesos de YOLO',
-                                required=False, default=YV4P.DEFAULT_WEIGHTS_FILE)
-            parser.add_argument('--names', help='Archivo de nombres de YOLO',
-                                required=False, default=YV4P.DEFAULT_NAMES_FILE)
-            parser.add_argument('--gpu', action='store_true', help='Usar NVIDIA CUDA', default=False)
-        self.args = parser.parse_args()
 
-    def initialize_network_parameters(self, cfg=None, weights=None, names=None, use_gpu=None):
-        """
-        Método para inicializar parámetros de la red neuronal, cargando el modelo.
+        parser.add_argument('--gui', action='store_true', help='Usar GUI')
+        parser.add_argument('-v', '--video', type=str, help='Vídeo a procesar')
+        parser.add_argument('-c', '--calle', type=int, help='Calle a analizar')
+        parser.add_argument('-m', '--mostrar', action='store_true', help='Mostrar procesamiento')
+        parser.add_argument('-g', '--guardar', action='store_true', help='Guardar gráficas')
+        parser.add_argument('--cfg', help='Archivo de configuración de YOLO', default=YV4P.DEFAULT_CFG_FILE)
+        parser.add_argument('--weights', help='Archivo de pesos de YOLO', default=YV4P.DEFAULT_WEIGHTS_FILE)
+        parser.add_argument('--names', help='Archivo de nombres de YOLO', default=YV4P.DEFAULT_NAMES_FILE)
+        parser.add_argument('--gpu', action='store_true', help='Usar NVIDIA CUDA')
 
-        Parameters
-        ----------
-        cfg: str
-            Ruta del archivo de configuración de YOLOv4
-        weights: str
-            Ruta del archivo de pesos de YOLOv4
-        names: str
-            Ruta del archivo de nombres de YOLOv4
-        use_gpu: bool
-            Usar NVIDIA CUDA (procesamiento por GPU)
-        """
+        args = parser.parse_args()
+        if args.gui is False:
+            if args.video is None or args.calle is None:
+                print('No se han especificado argumentos obligatorios [-v] [-c] o el uso de la interfaz gráfica.')
+                sys.exit(121)
+        else:
+            if not (args.video is None or args.calle is None or args.guardar is None or args.mostrar is None
+                    or args.cfg is None or args.weights is None or args.names is None or args.gpu is None):
+                print('Los valores de los argumentos adicionales serán sobreescritos por la interfaz gráfica.')
+        self.args = args
 
-        self.net = cv2.dnn_DetectionModel(cfg, weights)
-        if use_gpu:
+    def initialize_network_parameters(self):
+        """ Método para inicializar parámetros de la red neuronal, cargando el modelo. """
+
+        self.net = cv2.dnn_DetectionModel(self.args.cfg, self.args.weights)
+        if self.args.gpu:
             self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
             self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
         else:
@@ -87,32 +89,13 @@ class YOLOv4:
         self.net.setInputSize(416, 1984)
         self.net.setInputScale(1.0 / 255)
         self.net.setInputSwapRB(True)
-        with open(names, 'rt') as f:
+        with open(self.args.names, 'rt') as f:
             self.names = f.read().rstrip('\n').split('\n')
 
-    def process_video(self, videofilename=None, lanenumber=None, save=False, show=False):
-        """
-        Método para procesar el vídeo.
+    def process_video(self):
+        """ Método para procesar un video """
 
-        Parameters
-        ----------
-        videofilename: str
-            Ruta del archivo de vídeo
-        lanenumber: int
-            Número de calle
-        save: bool
-            Guardar gráficas tras procesamiento
-        show: bool
-            Mostrar vídeo durante el procesamiento
-        """
-
-        if self.args.gui and videofilename is not None:
-            self.video = cv2.VideoCapture(videofilename)
-        elif self.args.video is not None:
-            self.video = cv2.VideoCapture(self.args.video)
-        else:
-            print("No se ha especificado ningún video")
-            sys.exit(102)
+        self.video = cv2.VideoCapture(self.args.video)
 
         # Estadísticas sobre el vídeo.
         frames = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -120,7 +103,7 @@ class YOLOv4:
         ancho = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH))
         alto = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         frames_leidos, frames_procesados, frames_sin_contorno = 0, 0, 0
-        splits_esperados = calcular_splits(videofilename)
+        splits_esperados = calcular_splits(self.args.video)
 
         # Variables para posterior variación de resolución del vídeo y/o framerate
         necesita_redimension = (ancho != RV.HALF_WIDTH or alto != RV.HALF_HEIGHT)
@@ -131,7 +114,7 @@ class YOLOv4:
 
         # Coordenadas frontera de la calle a analizar.
         # Al rotar, coge una calle que no es.
-        borde_abajo_calle = PV.LANES_BOTTOM_PIXEL_ROTATED.get(str(lanenumber))
+        borde_abajo_calle = PV.LANES_BOTTOM_PIXEL_ROTATED.get(str(self.args.calle))
         borde_arriba_calle = borde_abajo_calle + PV.LANE_HEIGHT
 
         # Vectores con coordenadas para posterior cálculo de estadísticas
@@ -166,7 +149,7 @@ class YOLOv4:
                             if PV.MINIMUM_Y_ROI_LANE <= x <= PV.MAXIMUM_Y_ROI_LANE and y > PV.TRAMPOLIN_WIDTH:
                                 coordenadas[frames_procesados] = y
                                 altura_contorno[frames_procesados] = w
-                                if show:
+                                if self.args.mostrar:
                                     cv2.rectangle(frame, box, color=(b, g, r), thickness=2)
 
                     else:
@@ -174,9 +157,9 @@ class YOLOv4:
 
                     frames_leidos += 1
                     frames_procesados += 1
-                    end_timer = "{:0.4f}".format(1 / (time.time() - timer))
-                print(f'\rProcesando frame {frames_leidos} de {frames}. Velocidad: {end_timer} FPS.', end='')
-                if show:
+                    end_timer = "{:0.4f}".format((time.time() - timer))
+                print(f'\rProcesando frame {frames_leidos} de {frames} en {end_timer} segundos.', end='')
+                if self.args.mostrar:
                     # Redimensionamos ya que en vertical se sale de una pantalla Full HD (1292>1080)
                     cv2.imshow('Video', redimensionar_imagen(frame, height=900))
                 key = cv2.waitKey(1) & 0xff
@@ -193,9 +176,8 @@ class YOLOv4:
         print('\nFrames sin contornos detectados: %d.' % frames_sin_contorno)
         print('Tiempo total de procesamiento del vídeo: %.2f segundos.\n' % (time.time() - start_time))
 
-        analizar_datos_video(frames, fps, splits_esperados, save,
-                             videofilename, coordenadas, altura_contorno)
-
+        analizar_datos_video(frames, fps, splits_esperados, self.args.guardar,
+                             self.args.video, self.args.calle, coordenadas, altura_contorno)
 
 # if __name__ == "__main__":
 #     yolov4 = YOLOv4().__new__(YOLOv4)

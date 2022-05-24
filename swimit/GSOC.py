@@ -1,4 +1,5 @@
 import sys
+
 import cv2
 import time
 import math
@@ -13,6 +14,19 @@ from swimit.auxiliary_functions import calcular_splits, union_de_contornos, anal
 
 
 class GSOC:
+    """
+    Clase que implementa el procesamiento de un video con algoritmo de substracción de fondos GSOC.
+
+    Attributes
+    ----------
+    args: argparse.Namespace
+        Argumentos del programa.
+        --gui marca el uso de interfaz gráfica, el resto pueden obtenerse por línea de comandos o por la propia GUI.
+    gsocbs: cv2.bgsegm.BackgroundSubtractorGSOC
+        Algoritmo de substracción de fondos GSOC
+    video: cv2.VideoCapture
+        Video a procesar
+    """
 
     def __init__(self):
         """ Método llamado cuando se crea un objeto"""
@@ -23,40 +37,38 @@ class GSOC:
 
         self.parse_arguments()
         if self.args is not None and self.args.gui:
-            videofilename = UI.askforvideofile()
-            lanenumber = UI.askforlanenumber()
-            save = UI.askforsavegraphs()
-            show = UI.askforshowprocessing()
-            if videofilename is not None and lanenumber is not None and save is not None and show is not None:
-                self.process_video(videofilename, lanenumber, save, show)
-        elif self.args is not None:
-            self.process_video(self.args.video, self.args.calle, self.args.guardar, self.args.mostrar)
+            self.args.video = UI.askforvideofile()
+            self.args.calle = UI.askforlanenumber()
+            self.args.guardar = UI.askforsavegraphs()
+            self.args.mostrar = UI.askforshowprocessing()
+        self.process_video()
 
     def parse_arguments(self):
         """ Método para parsear argumentos """
 
         parser = argparse.ArgumentParser(description='Deteccion de nadadores usando GSOC')
-        parser.add_argument('-g', '--gui', action='store_true', help='Usar GUI', default=False)
-        if not parser.parse_args().gui:
-            parser.add_argument('-v', '--video', type=str, help='Nombre del video', required=True)
-            parser.add_argument('-c', '--calle', type=int, help='Número de calle', required=True)
-            parser.add_argument('--mostrar', action='store_true',
-                                help='Mostrar vídeo durante el procesamiento', default=False)
-            parser.add_argument('--guardar', action='store_true',
-                                help='Guardar gráficas tras procesamiento', default=False)
-        self.args = parser.parse_args()
 
-    def process_video(self, videofilename=None, lanenumber=None, save=False, show=False):
+        parser.add_argument('--gui', action='store_true', help='Usar interfaz gráfica')
+        parser.add_argument('-v', '--video', type=str, help='Video a procesar')
+        parser.add_argument('-c', '--calle', type=int, help='Calle a analizar', choices=range(1, 9))
+        parser.add_argument('-g', '--guardar', action='store_true', help='Guardar gráficas')
+        parser.add_argument('-m', '--mostrar', action='store_true', help='Mostrar procesamiento')
+
+        args = parser.parse_args()
+        if args.gui is False:
+            if args.video is None or args.calle is None:
+                print('No se han especificado argumentos obligatorios [-v] [-c] o el uso de la interfaz gráfica.')
+                sys.exit(121)
+        else:
+            if not(args.video is None or args.calle is None or args.guardar is None or args.mostrar is None):
+                print('Los valores de los argumentos adicionales serán sobreescritos por la interfaz gráfica.')
+        self.args = args
+
+    def process_video(self):
         """ Método para procesar video """
 
-        # Abrir vídeo en función de cómo se haya especificado
-        if self.args.gui and videofilename is not None:
-            self.video = cv2.VideoCapture(videofilename)
-        elif self.args.video is not None:
-            self.video = cv2.VideoCapture(self.args.video)
-        else:
-            print("No se ha especificado ningún video")
-            sys.exit(102)
+        # Abrir vídeo
+        self.video = cv2.VideoCapture(self.args.video)
 
         # Estadísticas sobre el vídeo.
         frames = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -64,7 +76,7 @@ class GSOC:
         ancho = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH))
         alto = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         frames_leidos, frames_procesados, frames_sin_contorno = 0, 0, 0
-        splits_esperados = calcular_splits(videofilename)
+        splits_esperados = calcular_splits(self.args.video)
 
         # Variables para posterior variación de resolución del vídeo y/o framerate
         necesita_redimension = (ancho != RV.HALF_WIDTH or alto != RV.HALF_HEIGHT)
@@ -73,8 +85,12 @@ class GSOC:
             fps_factor = math.ceil(fps / RV.NORMAL_FRAME_RATE)
             frames = int(frames // fps_factor)
 
+        if self.args.calle < 1 or self.args.calle > 8:
+            print('El número de calle debe estar entre 1 y 8')
+            sys.exit(104)
+
         # Coordenadas frontera de la calle a analizar
-        borde_abajo_calle = PV.LANES_BOTTOM_PIXEL.get(str(lanenumber))
+        borde_abajo_calle = PV.LANES_BOTTOM_PIXEL.get(str(self.args.calle))
         borde_arriba_calle = borde_abajo_calle + PV.LANE_HEIGHT
 
         # Vectores con coordenadas para posterior cálculo de estadísticas
@@ -131,8 +147,8 @@ class GSOC:
                             coordenadas[frames_procesados] = x
                             altura_contorno[frames_procesados] = h
 
-                        # Mostrar contornos y rectángulos de interés dependerá del flag show
-                        if show:
+                        # Mostrar contornos y rectángulos de interés dependerá del flag mostrar
+                        if self.args.mostrar:
                             cv2.rectangle(gsocfg, (x, y), (x + w, y + h), (255, 255, 255), 1)
 
                     elif len(cnts_ord) == 1:
@@ -141,15 +157,15 @@ class GSOC:
                             coordenadas[frames_procesados] = x
                             altura_contorno[frames_procesados] = h
 
-                        # Mostrar contornos y rectángulos de interés dependerá del flag show
-                        if show:
+                        # Mostrar contornos y rectángulos de interés dependerá del flag mostrar
+                        if self.args.mostrar:
                             cv2.rectangle(gsocfg, (x, y), (x + w, y + h), (255, 255, 255), 1)
 
                     else:
                         frames_sin_contorno += 1
 
                     # Necesita que los frames tengan el mismo número de canales. Dado que mostramos el RGB, 3.
-                    if show:
+                    if self.args.mostrar:
                         vertical_concat = np.vstack((
                             original_frame,
                             cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB),
@@ -159,8 +175,8 @@ class GSOC:
 
                     frames_leidos += 1
                     frames_procesados += 1
-                    end_timer = "{:0.4f}".format(1 / (time.time() - timer))
-                print(f'\rProcesando frame {frames_leidos} de {frames}. Velocidad: {end_timer} FPS.', end='')
+                    end_timer = "{:0.4f}".format((time.time() - timer))
+                    print(f'\rProcesando frame {frames_leidos} de {frames} en {end_timer} segundos.', end='')
 
                 key = cv2.waitKey(1) & 0xff
                 # El bucle se pausa al pulsar P, y se reanuda al pulsar cualquier otra tecla
@@ -176,8 +192,8 @@ class GSOC:
         print('\nFrames sin contornos detectados: %d.' % frames_sin_contorno)
         print('Tiempo total de procesamiento del vídeo: %.2f segundos.\n' % (time.time() - start_time))
 
-        analizar_datos_video(frames, fps, splits_esperados, save,
-                             videofilename, coordenadas, altura_contorno)
+        analizar_datos_video(frames, fps, splits_esperados, self.args.guardar,
+                             self.args.video, self.args.calle, coordenadas, altura_contorno)
 
 # if __name__ == "__main__":
 #    gsoc = GSOC.__new__(GSOC)
