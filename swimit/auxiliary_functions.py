@@ -11,9 +11,8 @@ from swimit.constants.pool_constants import PoolValues as PV
 from swimit.constants.resolution_constants import ResolutionValues as RV
 
 
-
 def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: bool,
-                         videofilename: str, coordenadas: np.ndarray, anchuras: np.ndarray):
+                         videofilename: str, lanenumber: int, coordenadas: np.ndarray, anchuras: np.ndarray):
     """
     Función que nos permite analizar los datos obtenidos de un vídeo.
     Se generará un fichero de texto con los datos obtenidos, y opcionalmente, gráficas.
@@ -30,6 +29,8 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
         Indica si se deben generar y guardar gráficas.
     videofilename: str
         Ruta del vídeo que se ha procesado y cuyos datos se desean analizar
+    lanenumber: int
+        Número de la calle que se ha procesado
     coordenadas: np.ndarray
         Array con las coordenadas X o Y del nadador en cada frame del vídeo.
     anchuras: np.ndarray
@@ -82,8 +83,9 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
               f"¿Está seguro de que alguien está nadando en la calle seleccionada?")
         sys.exit(109)
 
-    # Hallar nombre del vídeo para conformar despúes nombre de otros ficheros.
+    # Hallar nombre del vídeo y convertir calle a string para conformar despúes nombre de otros ficheros.
     videofilename = Path(videofilename).stem
+    lanenumber = str(lanenumber)
     # Crear directorio separado para resultados.
     if not os.path.exists("../results"):
         os.mkdir("../results")
@@ -91,9 +93,9 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
 
     if save:
         # Asegurar el directorio para guardar gráficas y resultado del análisis.
-        if not os.path.exists("results_" + videofilename):
-            os.makedirs("results_" + videofilename)
-        os.chdir("results_" + videofilename)
+        if not os.path.exists("results_calle_" + lanenumber + '_' + videofilename):
+            os.makedirs("results_calle_" + lanenumber + '_' + videofilename)
+        os.chdir("results_calle_" + lanenumber + '_' + videofilename)
 
         axis = np.arange(0, frames)
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -105,11 +107,11 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
         ax.set_title('Sentido del movimiento')
         ax.legend(loc='upper right')
         ax.grid(True)
-        plt.savefig('sentido_movimiento_' + videofilename + '.png')
+        plt.savefig('sentido_movimiento_calle_' + lanenumber + '_' + videofilename + '.png')
 
     brazadas_por_minuto_media = 0.0
     # 3. Cálculos en función del split. (Necesito "una iteración más" por manejo de índices)
-    with open("analisis_" + videofilename + ".txt", "w") as f:
+    with open("analisis_calle_" + lanenumber + '_' + videofilename + ".txt", "w") as f:
         for i in range(1, splits_reales + 1):
             try:
                 # 3.1 Extraer las coordenadas y anchuras correspondientes a ese split.
