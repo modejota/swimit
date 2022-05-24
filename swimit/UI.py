@@ -4,6 +4,7 @@ from swimit.constants.yolov4_paths_constants import YOLOv4Paths as YV4P
 
 
 class UI:
+    """ Clase con los métodos para interactuar con el usuario """
 
     @staticmethod
     def askforvideofile():
