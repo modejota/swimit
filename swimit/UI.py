@@ -7,10 +7,10 @@ class UI:
     """ Clase con los métodos para interactuar con el usuario """
 
     @staticmethod
-    def askforvideofile():
+    def askforvideofile(initialdirectory="../samples_videos"):
         Tk().withdraw()
         try:
-            vid = filedialog.askopenfilename(initialdir="../sample_videos", title="Seleccione fichero", filetypes=[
+            vid = filedialog.askopenfilename(initialdir=initialdirectory, title="Seleccione fichero", filetypes=[
                 ("Video files", ".avi .mp4 .flv"),
                 ("AVI file", ".avi"),
                 ("MP4 file", ".mp4"),
