@@ -25,8 +25,6 @@ class YOLOv4:
         --gui marca el uso de interfaz gráfica, el resto pueden obtenerse por línea de comandos o por la propia GUI.
     video: cv2.VideoCapture
         Video a procesar
-    names: str
-        Ruta del archivo de nombres de YOLOv4
     """
 
     def __init__(self):
@@ -35,17 +33,15 @@ class YOLOv4:
         self.net = None
         self.args = None
         self.video = None
-        self.names = None
 
         self.parse_arguments()
         if self.args is not None and self.args.gui:
-            self.args.video = UI.askforvideofile()
+            self.args.video = UI.askforvideofile("../sample_videos")
             self.args.calle = UI.askforlanenumber()
             self.args.guardar = UI.askforsavegraphs()
             self.args.mostrar = UI.askforshowprocessing()
             self.args.cfg = UI.askforcfgfile()
             self.args.weights = UI.askforweightsfile()
-            self.args.names = UI.askfornamesfile()
             self.args.gpu = UI.askforgpu()
         self.initialize_network_parameters()
         self.process_video()
@@ -62,17 +58,17 @@ class YOLOv4:
         parser.add_argument('-g', '--guardar', action='store_true', help='Guardar gráficas')
         parser.add_argument('--cfg', help='Archivo de configuración de YOLO', default=YV4P.DEFAULT_CFG_FILE)
         parser.add_argument('--weights', help='Archivo de pesos de YOLO', default=YV4P.DEFAULT_WEIGHTS_FILE)
-        parser.add_argument('--names', help='Archivo de nombres de YOLO', default=YV4P.DEFAULT_NAMES_FILE)
         parser.add_argument('--gpu', action='store_true', help='Usar NVIDIA CUDA')
 
         args = parser.parse_args()
         if args.gui is False:
             if args.video is None or args.calle is None:
-                print('No se han especificado argumentos obligatorios [-v] [-c] o el uso de la interfaz gráfica.')
+                print('No se han especificado argumentos obligatorios [-v] [-c] '
+                      'o el uso de la interfaz gráfica [--gui].')
                 sys.exit(121)
         else:
             if not (args.video is None or args.calle is None or args.guardar is None or args.mostrar is None
-                    or args.cfg is None or args.weights is None or args.names is None or args.gpu is None):
+                    or args.cfg is None or args.weights is None or args.gpu is None):
                 print('Los valores de los argumentos adicionales serán sobreescritos por la interfaz gráfica.')
         self.args = args
 
@@ -89,8 +85,6 @@ class YOLOv4:
         self.net.setInputSize(416, 1984)
         self.net.setInputScale(1.0 / 255)
         self.net.setInputSwapRB(True)
-        with open(self.args.names, 'rt') as f:
-            self.names = f.read().rstrip('\n').split('\n')
 
     def process_video(self):
         """ Método para procesar un video """
@@ -121,9 +115,6 @@ class YOLOv4:
         coordenadas = np.full(frames, np.NaN)
         altura_contorno = np.full(frames, np.NaN)
 
-        # Color para dibujar el contorno
-        b, g, r = 51, 204, 51
-
         start_time = time.time()
 
         while self.video.isOpened():
@@ -143,14 +134,14 @@ class YOLOv4:
                     classes, confidences, boxes = self.net.detect(frame, confThreshold=0.3, nmsThreshold=0.4)
 
                     if len(classes) != 0:
-                        # No necesito nada más que las boxes en verdad. Si acaso confianza para calcular medias.
-                        for classId, confidence, box in zip(classes.flatten(), confidences.flatten(), boxes):
+                        # La confianza la mantengo por si luego se quiere usar para mostrarlo en interfaz
+                        for confidence, box in zip(confidences.flatten(), boxes):
                             x, y, w, h = box
                             if PV.MINIMUM_Y_ROI_LANE <= x <= PV.MAXIMUM_Y_ROI_LANE and y > PV.TRAMPOLIN_WIDTH:
                                 coordenadas[frames_procesados] = y
                                 altura_contorno[frames_procesados] = w
                                 if self.args.mostrar:
-                                    cv2.rectangle(frame, box, color=(b, g, r), thickness=2)
+                                    cv2.rectangle(frame, box, color=(0, 255, 0), thickness=2)
 
                     else:
                         frames_sin_contorno += 1
@@ -179,6 +170,6 @@ class YOLOv4:
         analizar_datos_video(frames, fps, splits_esperados, self.args.guardar,
                              self.args.video, self.args.calle, coordenadas, altura_contorno)
 
-# if __name__ == "__main__":
-#     yolov4 = YOLOv4().__new__(YOLOv4)
-#     yolov4.__init__()
+
+# Ejecutar desde este mismo script
+yolov4 = YOLOv4()

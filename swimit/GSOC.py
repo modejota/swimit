@@ -1,5 +1,4 @@
 import sys
-
 import cv2
 import time
 import math
@@ -37,7 +36,7 @@ class GSOC:
 
         self.parse_arguments()
         if self.args is not None and self.args.gui:
-            self.args.video = UI.askforvideofile()
+            self.args.video = UI.askforvideofile("../sample_videos")
             self.args.calle = UI.askforlanenumber()
             self.args.guardar = UI.askforsavegraphs()
             self.args.mostrar = UI.askforshowprocessing()
@@ -57,10 +56,11 @@ class GSOC:
         args = parser.parse_args()
         if args.gui is False:
             if args.video is None or args.calle is None:
-                print('No se han especificado argumentos obligatorios [-v] [-c] o el uso de la interfaz gráfica.')
+                print('No se han especificado argumentos obligatorios [-v] [-c] '
+                      'o el uso de la interfaz gráfica [--gui].')
                 sys.exit(121)
         else:
-            if not(args.video is None or args.calle is None or args.guardar is None or args.mostrar is None):
+            if not (args.video is None or args.calle is None or args.guardar is None or args.mostrar is None):
                 print('Los valores de los argumentos adicionales serán sobreescritos por la interfaz gráfica.')
         self.args = args
 
@@ -121,12 +121,12 @@ class GSOC:
                     contornos_validos = []
 
                     for c in contornos:
-                        if SV.SWIMMER_MIN_AREA <= cv2.contourArea(c) <= SV.SWIMMER_MAX_AREA:
-                            [x, y, _, h] = cv2.boundingRect(c)
-                            # Discriminar corchera por su altura y obviar la zona del trampolín.
-                            if h > PV.CORCHES_HEIGHT and x > PV.TRAMPOLIN_WIDTH and \
-                                    PV.MINIMUM_Y_ROI_LANE <= y <= PV.MAXIMUM_Y_ROI_LANE:
-                                contornos_validos.append(c)
+                        [x, y, _, h] = cv2.boundingRect(c)
+                        # Discriminar corchera por su altura y obviar la zona del trampolín.
+                        if h > PV.CORCHES_HEIGHT and x > PV.TRAMPOLIN_WIDTH and \
+                                PV.MINIMUM_Y_ROI_LANE <= y <= PV.MAXIMUM_Y_ROI_LANE and \
+                                SV.SWIMMER_MIN_AREA <= cv2.contourArea(c) <= SV.SWIMMER_MAX_AREA:
+                            contornos_validos.append(c)
 
                     # Contornos por area descendente, el nadador será el más grande o la unión de los dos más grandes.
                     cnts_ord = sorted(contornos_validos, key=lambda contorno: cv2.contourArea(contorno), reverse=True)
@@ -142,27 +142,19 @@ class GSOC:
                                 w + w2 < SV.SWIMMER_MAX_WIDTH):
                             [x, y, w, h] = union_de_contornos([x, y, w, h], [x2, y2, w2, h2])
 
-                        # Si el contorno está en el área de interés, guardamos sus posiciones para posterior análsis.
-                        if PV.MINIMUM_Y_ROI_LANE <= y <= PV.MAXIMUM_Y_ROI_LANE:
-                            coordenadas[frames_procesados] = x
-                            altura_contorno[frames_procesados] = h
-
-                        # Mostrar contornos y rectángulos de interés dependerá del flag mostrar
-                        if self.args.mostrar:
-                            cv2.rectangle(gsocfg, (x, y), (x + w, y + h), (255, 255, 255), 1)
-
                     elif len(cnts_ord) == 1:
                         [x, y, w, h] = cv2.boundingRect(cnts_ord[0])
-                        if PV.MINIMUM_Y_ROI_LANE <= y <= PV.MAXIMUM_Y_ROI_LANE:
-                            coordenadas[frames_procesados] = x
-                            altura_contorno[frames_procesados] = h
-
-                        # Mostrar contornos y rectángulos de interés dependerá del flag mostrar
-                        if self.args.mostrar:
-                            cv2.rectangle(gsocfg, (x, y), (x + w, y + h), (255, 255, 255), 1)
 
                     else:
                         frames_sin_contorno += 1
+
+                    if len(cnts_ord) >= 1:
+                        coordenadas[frames_procesados] = x
+                        altura_contorno[frames_procesados] = h
+
+                        # Mostrar contornos y rectángulos de interés dependerá del flag mostrar
+                        if self.args.mostrar:
+                            cv2.rectangle(gsocfg, (x, y), (x + w, y + h), (255, 255, 255), 1)
 
                     # Necesita que los frames tengan el mismo número de canales. Dado que mostramos el RGB, 3.
                     if self.args.mostrar:
@@ -195,6 +187,6 @@ class GSOC:
         analizar_datos_video(frames, fps, splits_esperados, self.args.guardar,
                              self.args.video, self.args.calle, coordenadas, altura_contorno)
 
-# if __name__ == "__main__":
-#    gsoc = GSOC.__new__(GSOC)
-#    gsoc.__init__()
+
+# Ejecutar desde este mismo script
+gsoc = GSOC()
