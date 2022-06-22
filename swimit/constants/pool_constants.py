@@ -12,6 +12,12 @@ class PoolValues:
         Altura en píxeles de cada calle de la piscina.
     LANES_BOTTOM_PIXEL : dictionary
         Correspondencia entre el número de calle y número de píxel en el que comienzan.
+        Aplicable cuando el vídeo es en horizontal, de izquierda a derecha.
+        Viendo el vídeo en horizontal, las calles se numeran desde abajo.
+    LANES_BOTTOM_PIXEL_ROTATED : dictionary
+        Correspondencia entre el número de calle y número de píxel en el que comienzan.
+        Aplicable cuando el vídeo es en vertical, de arriba a abajo.
+        Viendo el vídeo en verical, la calles se numeran desde la izquierda. (Equivalente a desde abajo en horizontal)
     LEFT_T_X_POSITION: int
         Posición en el eje X en la que empieza el dibujo bajo la calle (en los extremos es una T).
     RIGHT_T_X_POSITION: int
@@ -34,6 +40,7 @@ class PoolValues:
 
     LANE_HEIGHT = 120
     LANES_BOTTOM_PIXEL = {"1": 670, "2": 580, "3": 485, "4": 387, "5": 285, "6": 190, "7": 100, "8": 0}
+    LANES_BOTTOM_PIXEL_ROTATED = {"1": 26, "2": 126, "3": 216, "4": 301, "5": 387+26, "6": 485+26, "7": 606, "8": 696}
     LEFT_T_X_POSITION = 170
     RIGHT_T_X_POSITION = 1140
     CORCHES_HEIGHT = 10

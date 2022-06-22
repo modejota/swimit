@@ -1,5 +1,7 @@
 import re
 import os
+import sys
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,8 +11,9 @@ from swimit.constants.pool_constants import PoolValues as PV
 from swimit.constants.resolution_constants import ResolutionValues as RV
 
 
-def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: bool,
-                         videofilename: str, coordenadas: np.ndarray, anchuras: np.ndarray):
+def analizar_datos_video(frames: int, fps: float, save: bool,
+                         videofilename: str, lanenumber: int,
+                         coordenadas: np.ndarray, anchuras: np.ndarray, detector: str):
     """
     Función que nos permite analizar los datos obtenidos de un vídeo.
     Se generará un fichero de texto con los datos obtenidos, y opcionalmente, gráficas.
@@ -21,24 +24,21 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
         Número de frames del vídeo.
     fps: float
         Frames por segundo del vídeo.
-    splits_esperados: int
-        Número de splits que se espera que nade el nadador
     save: boolean
         Indica si se deben generar y guardar gráficas.
     videofilename: str
         Ruta del vídeo que se ha procesado y cuyos datos se desean analizar
+    lanenumber: int
+        Número de la calle que se ha procesado
     coordenadas: np.ndarray
         Array con las coordenadas X o Y del nadador en cada frame del vídeo.
     anchuras: np.ndarray
         Array con las anchuras de los contornos del nadador en cada frame del vídeo.
+    detector: str
+        Nombre del detector que se ha utilizado para detectar los contornos. GSoC o YOLOv4
     """
 
-    # Hallar nombre del vídeo para conformar despúes nombre de otros ficheros.
-    videofilename = Path(videofilename).stem
-    # Crear directorio separado para resultados.
-    if not os.path.exists("../results"):
-        os.mkdir("../results")
-    os.chdir("../results")
+    splits_esperados = calcular_splits(videofilename)
 
     # 1. Procesar coordenadas en las que no se detectó al nadador.
     for i in range(frames):
@@ -53,39 +53,48 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
         find_peaks(coordenadas_suavizadas, distance=PV.SPLIT_MIN_FRAMES, width=11)[0],
         find_peaks(-1 * coordenadas_suavizadas, distance=PV.SPLIT_MIN_FRAMES, width=11)[0]
     )))
+    # El suavizado del final del vídeo puede crear falsos picos, haciendo creer
+    # que hay más splits de los que realmente hay, los eliminamos.
+    if len(picos) >= splits_esperados:
+        picos = picos[:splits_esperados-1]
     coordenadas_picos = [coordenadas[p] for p in picos]
 
-    # El suavizado del final del vídeo puede crear falsos picos, los eliminamos.
-    if len(coordenadas_picos) > splits_esperados:
-        for i in range(len(coordenadas_picos) > splits_esperados):
-            if abs(coordenadas_picos[-1] - coordenadas_picos[-2]) < 20:
-                if abs(coordenadas_picos[-1] > abs(coordenadas_picos[-2])):
-                    coordenadas_picos.pop()
-                    picos.pop()
-                else:
-                    coordenadas_picos.pop(-2)
-                    picos.pop(-2)
-
     # Hallamos el número real de splits que se han nadado, ya que hay vídeos en los que se corta a mitad.
-    splits_reales = len(coordenadas_picos) if len(coordenadas_picos) != splits_esperados else splits_esperados
-
+    splits_reales = len(coordenadas_picos)+1
+    # Delimitar las regiones de interes en función del cambio de sentido.
     indices = []
-    primer_indice = np.where(coordenadas > PV.AFTER_JUMPING_X)[0][0]
-    indices.append(primer_indice)
-    # Correspondencia entre coordenada del pico y número de frame donde se produce.
-    # El pico y el número de frame donde se produce nos sirven si no hubo ninguno cerca.
-    for i, x in enumerate(coordenadas):
-        if x in coordenadas_picos and \
-                not any(t in indices for t in range(i - PV.SPLIT_MIN_FRAMES // 2, i + PV.SPLIT_MIN_FRAMES // 2)):
-            indices.append(i)
-    ultimo_indice = np.where(coordenadas > 0)[0][-1]
-    indices = np.append(np.sort(indices), ultimo_indice)
+    try:
+        primer_indice = np.where(coordenadas > PV.AFTER_JUMPING_X)[0][0]
+        indices.append(primer_indice)
+        # Correspondencia entre coordenada del pico y número de frame donde se produce.
+        # El pico y el número de frame donde se produce nos sirven si no hubo ninguno cerca.
+        for i, x in enumerate(coordenadas):
+            if x in coordenadas_picos and \
+                    not any(t in indices for t in range(i - PV.SPLIT_MIN_FRAMES // 2, i + PV.SPLIT_MIN_FRAMES // 2)):
+                indices.append(i)
+        ultimo_indice = np.where(coordenadas > PV.LEFT_T_X_POSITION)[0][-1]
+        indices = np.append(np.sort(indices), ultimo_indice)
+    except IndexError:
+        print(f"No se ha podido encontrar al nadador en la región de interés durante todo el vídeo.\n"
+              f"¿Está seguro de que alguien está nadando en la calle seleccionada?")
+        sys.exit(109)
+
+    # Hallar nombre del vídeo y convertir calle a string para conformar despúes nombre de otros ficheros.
+    videofilename = Path(videofilename).stem
+    lanenumber = str(lanenumber)
+    # Crear directorio separado para resultados.
+    if not os.path.exists("../results"):
+        os.mkdir("../results")
+    os.chdir("../results")
+
+    path_results_directory = detector + "_results_calle_" + lanenumber + '_' + videofilename
+    path_results_file = detector + "_analisis_calle_" + lanenumber + '_' + videofilename + ".txt"
 
     if save:
         # Asegurar el directorio para guardar gráficas y resultado del análisis.
-        if not os.path.exists("results_" + videofilename):
-            os.makedirs("results_" + videofilename)
-        os.chdir("results_" + videofilename)
+        if not os.path.exists(path_results_directory):
+            os.makedirs(path_results_directory)
+        os.chdir(path_results_directory)
 
         axis = np.arange(0, frames)
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -97,11 +106,11 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
         ax.set_title('Sentido del movimiento')
         ax.legend(loc='upper right')
         ax.grid(True)
-        plt.savefig('sentido_movimiento_' + videofilename + '.png')
+        plt.savefig('sentido_movimiento_calle_' + lanenumber + '_' + videofilename + '.png')
 
     brazadas_por_minuto_media = 0.0
     # 3. Cálculos en función del split. (Necesito "una iteración más" por manejo de índices)
-    with open("analisis_" + videofilename + ".txt", "w") as f:
+    with open(path_results_file, "w") as f:
         for i in range(1, splits_reales + 1):
             try:
                 # 3.1 Extraer las coordenadas y anchuras correspondientes a ese split.
@@ -132,6 +141,7 @@ def analizar_datos_video(frames: int, fps: float, splits_esperados: int, save: b
                     ax.plot(axis[indices[i - 1]:indices[i]], anchuras_suavizada, 'b', label="Anchura suavizada")
                     ax.plot(axis[indices[i - 1]:indices[i]][picos_relevantes], magnitud, 'ro', ls="", markersize=4,
                             label="Brazadas")
+                    plt.ylim([10, 60])  # Ningún dato experimental útil se ha movido de estos umbrales.
                     ax.set_xlabel('Frame')
                     ax.set_ylabel('Anchura del nadador en píxeles')
                     ax.set_title('Variación de la anchura del nadador. Split %d' % i)
@@ -203,3 +213,40 @@ def calcular_splits(videoname: str) -> int:
         total_distance = match.group(1)
         splits = int(total_distance) // PV.REAL_POOL_LENGTH
     return splits
+
+
+def redimensionar_imagen(image, width=None, height=None, inter=cv2.INTER_AREA):
+    """
+    Función para redimensionar una imagen de manera que mantenga la proporcion.
+    Parameters
+    ---------
+    image: numpy.ndarray
+        Imagen a redimensionar.
+    width: int
+        Ancho de la imagen que se desea que tenga la imagen redimensionada.
+    height: int
+        Alto de la imagen que se desea que tenga la imagen redimensionada.
+    inter: int
+        Tipo de interpolación a utilizar.
+
+    Returns
+    ------
+    resized: numpy.ndarray
+        Imagen redimensionada.
+    """
+
+    (h, w) = image.shape[:2]
+
+    # No se indican dimensiones, devolvemos original
+    if width is None and height is None:
+        return image
+
+    # Comprobamos que dimensión se especifica y la otra se calcula manteniendo la proporción
+    if width is None:
+        r = height / float(h)
+        dim = (int(w * r), height)
+    else:
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    return cv2.resize(image, dim, interpolation=inter)
