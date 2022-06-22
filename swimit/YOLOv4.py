@@ -81,8 +81,8 @@ class YOLOv4:
             self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
         else:
             self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-            self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-        self.net.setInputSize(416, 1984)
+            self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)    # Puede llegar a ser casi 200 veces más lento.
+        self.net.setInputSize(256, 2592)    # Doble del tamaño de la calle en ambos ejes.
         self.net.setInputScale(1.0 / 255)
         self.net.setInputSwapRB(True)
 
@@ -90,6 +90,7 @@ class YOLOv4:
         """ Método para procesar un video """
 
         self.video = cv2.VideoCapture(self.args.video)
+        video_name = self.args.video.split('/')[-1]
 
         # Estadísticas sobre el vídeo.
         frames = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -107,7 +108,7 @@ class YOLOv4:
             frames = int(frames // fps_factor)
 
         # Coordenadas frontera de la calle a analizar.
-        # Al rotar, coge una calle que no es.
+        # Al rotarse la primera calle es la de abajon si se ve el vídeo en horizontal.
         borde_abajo_calle = PV.LANES_BOTTOM_PIXEL_ROTATED.get(str(self.args.calle))
         borde_arriba_calle = borde_abajo_calle + PV.LANE_HEIGHT
 
@@ -129,12 +130,11 @@ class YOLOv4:
                     frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
                     frame = frame[:, borde_abajo_calle:borde_arriba_calle, :]
 
-                    # Los umbrales puede que los cambie
                     timer = time.time()
                     classes, confidences, boxes = self.net.detect(frame, confThreshold=0.3, nmsThreshold=0.4)
 
                     if len(classes) != 0:
-                        # La confianza la mantengo por si luego se quiere usar para mostrarlo en interfaz
+                        # La confianza se mantiene por si se quisiese mostrar en interfaz
                         for confidence, box in zip(confidences.flatten(), boxes):
                             x, y, w, h = box
                             if PV.MINIMUM_Y_ROI_LANE <= x <= PV.MAXIMUM_Y_ROI_LANE and y > PV.TRAMPOLIN_WIDTH:
@@ -151,8 +151,7 @@ class YOLOv4:
                     end_timer = "{:0.4f}".format((time.time() - timer))
                 print(f'\rProcesando frame {frames_leidos} de {frames} en {end_timer} segundos.', end='')
                 if self.args.mostrar:
-                    # Redimensionamos ya que en vertical se sale de una pantalla Full HD (1292>1080)
-                    cv2.imshow('Video', redimensionar_imagen(frame, height=900))
+                    cv2.imshow(video_name, cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE))
                 key = cv2.waitKey(1) & 0xff
                 # El bucle se pausa al pulsar P, y se reanuda al pulsar cualquier otra tecla
                 if key == 112:
@@ -167,8 +166,8 @@ class YOLOv4:
         print('\nFrames sin contornos detectados: %d.' % frames_sin_contorno)
         print('Tiempo total de procesamiento del vídeo: %.2f segundos.\n' % (time.time() - start_time))
 
-        analizar_datos_video(frames, fps, splits_esperados, self.args.guardar,
-                             self.args.video, self.args.calle, coordenadas, altura_contorno)
+        analizar_datos_video(frames, fps, self.args.guardar,
+                             self.args.video, self.args.calle, coordenadas, altura_contorno, "YOLOv4")
 
 
 # Ejecutar desde este mismo script
