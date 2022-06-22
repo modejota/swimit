@@ -69,6 +69,8 @@ class GSOC:
 
         # Abrir vídeo
         self.video = cv2.VideoCapture(self.args.video)
+        video_name = self.args.video.split('/')[-1]
+
 
         # Estadísticas sobre el vídeo.
         frames = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -76,7 +78,6 @@ class GSOC:
         ancho = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH))
         alto = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
         frames_leidos, frames_procesados, frames_sin_contorno = 0, 0, 0
-        splits_esperados = calcular_splits(self.args.video)
 
         # Variables para posterior variación de resolución del vídeo y/o framerate
         necesita_redimension = (ancho != RV.HALF_WIDTH or alto != RV.HALF_HEIGHT)
@@ -122,7 +123,7 @@ class GSOC:
 
                     for c in contornos:
                         [x, y, _, h] = cv2.boundingRect(c)
-                        # Discriminar corchera por su altura y obviar la zona del trampolín.
+                        # Discriminar corchera por su altura, obviar la zona del trampolín y extremos verticales.
                         if h > PV.CORCHES_HEIGHT and x > PV.TRAMPOLIN_WIDTH and \
                                 PV.MINIMUM_Y_ROI_LANE <= y <= PV.MAXIMUM_Y_ROI_LANE and \
                                 SV.SWIMMER_MIN_AREA <= cv2.contourArea(c) <= SV.SWIMMER_MAX_AREA:
@@ -163,7 +164,7 @@ class GSOC:
                             cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB),
                             cv2.cvtColor(gsocfg, cv2.COLOR_GRAY2RGB)
                         ))
-                        cv2.imshow('Video', vertical_concat)
+                        cv2.imshow(video_name, vertical_concat)
 
                     frames_leidos += 1
                     frames_procesados += 1
@@ -184,8 +185,8 @@ class GSOC:
         print('\nFrames sin contornos detectados: %d.' % frames_sin_contorno)
         print('Tiempo total de procesamiento del vídeo: %.2f segundos.\n' % (time.time() - start_time))
 
-        analizar_datos_video(frames, fps, splits_esperados, self.args.guardar,
-                             self.args.video, self.args.calle, coordenadas, altura_contorno)
+        analizar_datos_video(frames, fps, self.args.guardar,
+                             self.args.video, self.args.calle, coordenadas, altura_contorno, "GSoC")
 
 
 # Ejecutar desde este mismo script
