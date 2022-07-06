@@ -40,7 +40,7 @@ class PoolValues:
 
     LANE_HEIGHT = 120
     LANES_BOTTOM_PIXEL = {"1": 670, "2": 580, "3": 485, "4": 387, "5": 285, "6": 190, "7": 100, "8": 0}
-    LANES_BOTTOM_PIXEL_ROTATED = {"1": 26, "2": 126, "3": 216, "4": 301, "5": 387+26, "6": 485+26, "7": 606, "8": 696}
+    LANES_BOTTOM_PIXEL_ROTATED = {"1": 20, "2": 120, "3": 210, "4": 305, "5": 407, "6": 505, "7": 600, "8": 790}
     LEFT_T_X_POSITION = 170
     RIGHT_T_X_POSITION = 1140
     CORCHES_HEIGHT = 10

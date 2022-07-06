@@ -5,7 +5,7 @@ from dataclasses import dataclass
 class SwimmerValues:
     """
     Objeto que almacenará diferentes parámetros propios de un nadador.
-    
+
     Attributes
     ----------
     SWIMSUIT_MAX_WIDTH: int
@@ -18,6 +18,8 @@ class SwimmerValues:
         Mínima área para considerar válido el contorno.
     SWIMMER_MAX_AREA: int
         Máxima área para considerar válido el contorno.
+    SWIMMER_AVERAGE_LENGTH: int
+        Longitud media del nadador.
     """
 
     SWIMSUIT_MAX_WIDTH = 22
@@ -25,3 +27,4 @@ class SwimmerValues:
     SWIMMER_MAX_WIDTH = 115
     SWIMMER_MIN_AREA = 200
     SWIMMER_MAX_AREA = 2500
+    SWIMMER_AVERAGE_LENGTH = 65
