@@ -71,12 +71,12 @@ class GSOC:
         self.video = cv2.VideoCapture(self.args.video)
         video_name = self.args.video.split('/')[-1]
 
-
         # Estadísticas sobre el vídeo.
         frames = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = self.video.get(cv2.CAP_PROP_FPS)
         ancho = int(self.video.get(cv2.CAP_PROP_FRAME_WIDTH))
         alto = int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        processing_frames = frames
         frames_leidos, frames_procesados, frames_sin_contorno = 0, 0, 0
 
         # Variables para posterior variación de resolución del vídeo y/o framerate
@@ -84,7 +84,7 @@ class GSOC:
         fps_factor = 1
         if fps >= RV.NORMAL_FRAME_RATE:
             fps_factor = math.ceil(fps / RV.NORMAL_FRAME_RATE)
-            frames = int(frames // fps_factor)
+            processing_frames = int(frames // fps_factor)
 
         if self.args.calle < 1 or self.args.calle > 8:
             print('El número de calle debe estar entre 1 y 8')
@@ -95,13 +95,13 @@ class GSOC:
         borde_arriba_calle = borde_abajo_calle + PV.LANE_HEIGHT
 
         # Vectores con coordenadas para posterior cálculo de estadísticas
-        coordenadas = np.full(frames, np.NaN)
-        altura_contorno = np.full(frames, np.NaN)
+        coordenadas = np.full(processing_frames, np.NaN)
+        altura_contorno = np.full(processing_frames, np.NaN)
 
         start_time = time.time()
 
         # Comenzamos procesamiento del vídeo
-        while self.video.isOpened():
+        while self.video.isOpened() and frames_leidos < 7000:
             ok, original_frame = self.video.read()
             if ok:
 
@@ -111,7 +111,8 @@ class GSOC:
                     if necesita_redimension:
                         original_frame = cv2.resize(original_frame, (RV.HALF_WIDTH, RV.HALF_HEIGHT))
                     original_frame = original_frame[borde_abajo_calle:borde_arriba_calle, :, :]
-                    frame = cv2.cvtColor(original_frame, cv2.COLOR_BGR2YCrCb)[..., 1]
+                    # Sin crear copia, OpenCV impide dibujar sobre el resultado de un slice
+                    frame = np.copy(cv2.cvtColor(original_frame, cv2.COLOR_BGR2YCrCb)[..., 1])
 
                     # Aplicar substracción de fondo, lo que nos devuelve la variación de la imagen.
                     timer = time.time()
@@ -155,6 +156,8 @@ class GSOC:
 
                         # Mostrar contornos y rectángulos de interés dependerá del flag mostrar
                         if self.args.mostrar:
+                            cv2.rectangle(original_frame, (x, y), (x + w, y + h), (0, 0, 255), 1)
+                            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 1)
                             cv2.rectangle(gsocfg, (x, y), (x + w, y + h), (255, 255, 255), 1)
 
                     # Necesita que los frames tengan el mismo número de canales. Dado que mostramos el RGB, 3.
@@ -185,9 +188,9 @@ class GSOC:
         print('\nFrames sin contornos detectados: %d.' % frames_sin_contorno)
         print('Tiempo total de procesamiento del vídeo: %.2f segundos.\n' % (time.time() - start_time))
 
-        analizar_datos_video(frames, fps, self.args.guardar,
+        analizar_datos_video(processing_frames, fps, self.args.guardar,
                              self.args.video, self.args.calle, coordenadas, altura_contorno, "GSoC")
 
 
 # Ejecutar desde este mismo script
-gsoc = GSOC()
+# gsoc = GSOC()
