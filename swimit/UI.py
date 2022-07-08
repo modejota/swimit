@@ -28,10 +28,10 @@ class UI:
         return vid
 
     @staticmethod
-    def askforcfgfile():
+    def askforcfgfile(initialdirectory=YV4P.DEFAULT_YOLO_DIRECTORY):
         Tk().withdraw()
         try:
-            cfg = filedialog.askopenfilename(initialdir=YV4P.DEFAULT_CFG_DIRECTORY, title="Seleccione fichero",
+            cfg = filedialog.askopenfilename(initialdir=initialdirectory, title="Seleccione fichero",
                                              filetypes=[("Config files", ".cfg")])
         except(OSError, FileNotFoundError):
             print(f'No se ha podido abrir el fichero seleccionado.')
@@ -45,10 +45,10 @@ class UI:
         return cfg
 
     @staticmethod
-    def askforweightsfile():
+    def askforweightsfile(initialdirectory=YV4P.DEFAULT_YOLO_DIRECTORY):
         Tk().withdraw()
         try:
-            weights = filedialog.askopenfilename(initialdir=YV4P.DEFAULT_WEIGHTS_DIRECTORY, title="Seleccione fichero",
+            weights = filedialog.askopenfilename(initialdir=initialdirectory, title="Seleccione fichero",
                                                  filetypes=[("Weights files", ".weights")])
         except(OSError, FileNotFoundError):
             print(f'No se ha podido abrir el fichero seleccionado.')
@@ -62,10 +62,10 @@ class UI:
         return weights
 
     @staticmethod
-    def askfornamesfile():
+    def askfornamesfile(initialdirectory=YV4P.DEFAULT_YOLO_DIRECTORY):
         Tk().withdraw()
         try:
-            names = filedialog.askopenfilename(initialdir=YV4P.DEFAULT_NAMES_DIRECTORY, title="Seleccione fichero",
+            names = filedialog.askopenfilename(initialdir=initialdirectory, title="Seleccione fichero",
                                                filetypes=[("Names files", ".names")])
         except(OSError, FileNotFoundError):
             print(f'No se ha podido abrir el fichero seleccionado.')

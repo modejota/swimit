@@ -15,7 +15,7 @@ class ResolutionValues:
     HALF_RESOLUTION_HEIGHT: int
         Alto en píxeles de los vídeos a media resolución.
     """
-    NORMAL_FRAME_RATE = 42
 
+    NORMAL_FRAME_RATE = 42
     HALF_WIDTH = 1292
     HALF_HEIGHT = 816

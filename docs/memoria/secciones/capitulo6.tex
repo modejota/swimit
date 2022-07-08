@@ -1,0 +1,46 @@
+\chapter{Conclusiones y trabajo futuro} \label{cap:capitulo6}
+
+\section{Conclusiones}
+
+Este Trabajo Fin de Grado propone y analiza una primera aproximación a la estimación del cálculo de la frecuencia media de nado de nadadores en piscinas con sistemas de captación de vídeo, propuesta por investigadores de la Facultad de Ciencias del Deporte de la Universidad de Granada. 
+
+La solución presentada consta de dos pasos: (i) detección del nadador, (ii) estimación de la frecuencia de nado. 
+
+Para realizar la detección del nadador se propone el uso de técnicas clásicas del procesamiento de imágenes, entre las que se encuentran la correcta elección del espacio de color y el uso de algoritmos de sustracción de fondos y extracción de contornos; y técnicas basadas en aprendizaje automático y redes neuronales convolucionales orientadas a la detección de objetos, YOLO. 
+
+Para realizar la estimación de la frecuencia de nado se necesita determinar el tiempo que se tarda en recorrer la región de interés para cada split y obtener el número de brazadas realizadas para cada región de interés.
+
+Estos cálculos se realizan utilizando los parámetros de las cajas generadas por los métodos de detección. Mediante la posición en el eje X puede estimarse cuanto tarda el nadador en recorrer la región de interés. Dado que el nadador debe extender los brazos hacia los lados cuando bracea, el número de brazadas es determinado a partir de los momentos de máxima anchura en el eje Y de la caja que contiene al nadador.
+
+Se ha comprobado experimentalmente que la solución propuesta permite calcular correctamente la frecuencia media de nado. Los mejores resultados, bastante fieles a la realidad, han sido obtenidos haciendo uso de aprendizaje profundo con la arquitectura de detección de objetos YOLOv4, con un error relativo de 0.0385 frente a 0.1311 de la aproximación clásica.
+
+Además, extraemos las siguientes conclusiones:
+\begin{itemize}
+    \item El uso de YOLOv4, siempre que este haya sido entrenado con un conjunto de imágenes lo suficientemente representativo, permite realizar detecciones bastante precisas de la posición y contorno del nadador. Estas detecciones proporcionan información suficiente para realizar una estimación bastante precisa de la frecuencia de nado en la mayoría de situaciones.
+    
+    \item Las bandas de crominancia del espacio de color YCbCr proporcionan una cierta robustez frente a variaciones de iluminación, lo que facilita a los algoritmos de sustracción de fondos detectar al nadador sin incluir el agua que le rodea.
+    
+    El uso de la banda de crominancia roja de YCbCr y el algoritmo de sustracción de fondos GSoC es la combinación que mejores resultados proporciona de entre las probadas durante el tercer capítulo.
+    Esta permite obtener una estimación de la frecuencia de nado aceptable para la mayoría de estilos de natación.
+    
+    \item Los datos proporcionados por las técnicas clásicas del procesamiento de imágenes suelen tener una mayor cantidad de ruido que los proporcionados por YOLOv4. Este ruido desvirtúa el carácter periódico de la variación de anchura del nada, lo que dificulta la detección de las brazadas. En consecuencia, YOLOv4 permite realizar una mejor estimación de la frecuencia media de nado que las técnicas clásicas del procesamiento de imágenes.
+    
+    \item El tiempo de cómputo requerido por YOLOv4 es significativamente mayor que el requerido por los algoritmos de sustracción de fondos. El uso de esta arquitectura de aprendizaje profundo requiere de un hardware más potente que el que requieren las técnicas clásicas. En función del hardware utilizado, el tiempo requerido por YOLOv4 puede no ser siempre asumible. 
+    
+\end{itemize}
+
+\section{Trabajo futuro}
+
+El presente trabajo propone una primera aproximación a la estimación del cálculo de la frecuencia media de nado de nadadores, la cual resulta prometedora. Sin embargo, somos conscientes de que esta se ha probado con un conjunto reducido de vídeos, por lo que sería necesario validar el modelo con más ejemplos. Así pues, creemos que esta solución puede ser mejorada en un futuro. A continuación, se plantean varias líneas que consideramos de interés para futuros trabajos.
+
+\begin{itemize}
+    \item Los algoritmos de sustracción de fondos analizados en este trabajo presentan problemas a la hora de obviar el chapoteo del agua, ya que el valor de dichos píxeles cambia muy frecuentemente. El uso de nuevos algoritmos de sustracción de fondos que minimicen la detección de píxeles intermitentes podría mejorar los resultados obtenidos.  
+    
+    \item En este trabajo se ha hecho uso de YOLOv4, sin embargo existen nuevas versiones de esta arquitectura de detección de objetos. El uso de nuevas versiones podría contribuir a una mejora en los resultados obtenidos y/o a una reducción del tiempo de cómputo necesario. No obstante, el uso de arquitecturas más complejas puede conllevar requisitos de hardware más costosos.
+    
+    Un conjunto de imágenes de entrenamiento más variado podría mejorar considerablemente los resultados obtenidos, especialmente para nado en braza, ya que no disponíamos de imágenes de entrenamiento para dicho estilo de nado. Además, el uso de imágenes de entrenamiento similares en dimensiones a los fotogramas de los vídeos donde se realizaría la detección podría contribuir a una mejora de los tiempos de ejecución, dado que las resoluciones de entrada a la red podrían ser menores. Estos tiempos podrían ser reducidos aún más si se utilizan máquinas que cuenten con tarjetas gráficas de última generación.
+    
+    \item El uso de técnicas clásicas del procesamiento de imágenes y técnicas basadas en aprendizaje profundo no es excluyente. Dado que el uso de las bandas de crominancia del espacio de color YCbCr permite reducir la influencia de las variaciones de iluminación y del chapoteo generado en el agua, creemos que el uso de estas a la hora de utilizar una arquitectura de detección de objetos como YOLO permitiría mejorar los resultados obtenidos en este trabajo. 
+
+    \item En este trabajo se ha propuesto un modelo de cálculo de la frecuencia media de nado común para diferentes estilos de nado. Con un número de ejemplos mayor se podrían desarrollar variaciones del método propuesto para cada estilo de nado, de manera que se tuvieran más en cuenta las particularidades de cada uno de ellos y se obtuvieran mejores resultados.
+\end{itemize}
