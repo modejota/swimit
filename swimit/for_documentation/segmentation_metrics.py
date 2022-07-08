@@ -56,22 +56,3 @@ def f1score(gt_bbox, pred_bbox, smooth=1e-6):
     union = gt_bbox[2] * gt_bbox[3] + pred_bbox[2] * pred_bbox[3]
     dice = 2. * intersection / (union + smooth)
     return dice
-
-
-def yolobbox2bbox(data, dw=1292, dh=120):
-    _, x, y, w, h = map(float, data.split(' '))
-    left = int((x - w / 2) * dw)
-    right = int((x + w / 2) * dw)
-    top = int((y - h / 2) * dh)
-    bottom = int((y + h / 2) * dh)
-
-    if left < 0:
-        left = 0
-    if right > dw - 1:
-        right = dw - 1
-    if top < 0:
-        top = 0
-    if bottom > dh - 1:
-        bottom = dh - 1
-    return [left, top, abs(right - left), abs(bottom - top)]
-
