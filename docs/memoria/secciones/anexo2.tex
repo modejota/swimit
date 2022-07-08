@@ -1,0 +1,43 @@
+\chapter*{Anexo II} \label{anexo2}
+
+En este apéndice se detalla un experimento adicional que se realizó, pero que finalmente no se considera relevante.
+
+La bondad de las estimaciones del tiempo que se tarda en recorrer una región de interés y el número de brazadas que se necesita para ello depende en gran medida del ruido existente en las distribuciones de datos usadas. Para determinar cual de los métodos propuestos en los capítulos \ref{cap:capitulo3} y \ref{cap:capitulo4} genera un menor nivel de ruido se ha calculado la desviación típica de la diferencia de valores de la coordenada X y anchura de la caja fotograma a fotograma. Puesto que esperamos obtener funciones suaves, el valor en un fotograma debe ser similar al anterior, y por tanto las diferencias deben ser cercanas a cero.
+
+La desviación típica es una medida estadística utilizada para cuantificar la variación de un conjunto de datos numéricos. Un valor bajo indica que la mayor parte de los datos de la muestra tienen un valor cercano a la media, mientras que un valor alto de este índice implica que los datos se extienden sobre un rango de valores más amplio \cite{estadistica}. Así, proporcionará datos con menor ruido, y más estables conforme avancen los fotogramas, aquel método que tenga una menor desviación típica. 
+
+En la tabla \ref{tab:desviaciondiferenciasX} se muestran la media de las desviaciones típicas para la diferencia de coordenada X fotograma a fotograma en función del estilo de nado. Como se puede observar, YOLO ofrece desviaciones menores para 3 de los 4 estilos de nado analizados. Dado que la desviación típica media total de YOLO es menor que la de GSoC, podemos concluir que YOLO ofrece una estimación de la coordenada X más estable y con menos ruido a lo largo del vídeo.
+
+\begin{table}[]
+    \centering
+    \small
+    \begin{tabular}{| c | c | c |   } \hline
+        Prueba & Desv. X GSoC & Desv. X YOLO   \\ \hline
+         Mariposa & 10.0665 & \textbf{8.1911} \\
+         Crol & 11.8329 & \textbf{8.8247} \\
+         Braza & 11.7872 & \textbf{5.1415} \\  
+         Espalda & \textbf{6.1868} & 6.6824 \\ 
+         General & 9.9684 & \textbf{7.2099} \\ \hline
+    \end{tabular}
+    \caption{Desviación típica media de la diferencia de coordenadas X.} 
+    \label{tab:desviaciondiferenciasX}
+\end{table}
+
+En la tabla \ref{tab:desviacionesdiferenciasanchura} se muestran las desviaciones típicas para la diferencia de anchura fotograma a fotograma en función del estilo de nado. 
+
+\begin{table}[]
+    \centering
+    \small
+    \begin{tabular}{| c | c | c |   } \hline
+        Prueba & Desv. anch. GSoC & Desv. anch. YOLO   \\ \hline
+         Mariposa & 4.4852 & \textbf{4.4025} \\
+         Crol & 4.7502 & \textbf{4.1230} \\
+         Braza & \textbf{3.2142} & 3.5325   \\
+         Espalda & \textbf{3.9511} & 4.3226 \\ 
+         General & 4.1002 & \textbf{4.0952} \\ \hline
+    \end{tabular}
+    \caption{Desviación típica media de la diferencia de anchuras de la cajas.}
+    \label{tab:desviacionesdiferenciasanchura}
+\end{table}
+
+En esta caso, GSoC parece proporcionar resultados con menor ruido para el nado en braza y espalda, mientras que YOLO lo hace para el nado en crol y mariposa. La desviación típica media total es ligeramente inferior para YOLO, pero la diferencia es prácticamente nula. Por tanto, se puede concluir que ambos métodos proporcionan datos de la anchura de la caja con un nivel similar de ruido.

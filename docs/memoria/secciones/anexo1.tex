@@ -1,0 +1,29 @@
+\chapter*{Anexo I} \label{anexo1}
+
+Detallamos en este anexo las herramientas de software y hardware que se han utilizado.
+
+Para poder desarrollar este trabajo se ha utilizado el paquete software \textit{OpenCV}, que proporciona la inmensa mayoría de herramientas que se necesitarán, tales como lectura de vídeos, conversión entre espacios de color, algoritmos de sustracción de fondos y extracción de contornos y algoritmos de detección de objetos mediante redes neuronales profundas. También se usará la librería \textit{Scipy} para realizar diversos cálculos estadísticos y el paquete \textit{Matplotlib} para generar gráficas. Como lenguaje de programación se ha decidido utilizar \textit{Python}, que permite manejar y analizar los datos extraídos de forma sencilla y cómoda. 
+
+Los requisitos necesarios para ejecutar el software desarrollado se listan a continuación:
+\begin{itemize}
+    \item Python 3.7 o superior.
+    \item OpenCV 4.0 o superior. Dado que se necesita habilitar el soporte con CUDA y cudNN, la instalación deberá ser realizada a partir del código fuente disponible en el repositorio de Github \cite{repoopencvi}. Además, dado que se utilizan algoritmos de sustracción de fondos presentes en los módulos extra, debe usarse también el código fuente del repositorio \cite{repoopencvii} a la hora de construir e instalar el paquete.
+    \item Scipy 1.2.0 o superior.
+    \item Matplotlib.
+    \item CUDA 10.2 o superior y cuDNN 8.0.2 o superior.
+    \item Tarjeta gráfica NVIDIA con soporte para CUDA y cuDNN con un mínimo de 4 GB de memoria VRAM.
+\end{itemize}
+
+El código fuente desarrollado en el marco de este proyecto se encuentra publicado como software libre en el repositorio \cite{myownrepo}. Este trabajo ha sido desarrollado gracias al material proporcionado por investigadores de la facultad de Ciencias del Deporte. Sin embargo, dado que no se ha recibido autorización expresa por parte de los mismos para la difusión del material, este no es adjuntado en la entrega ni se encuentra disponible en el repositorio de Github.
+
+Adicionalmente, para el entrenamiento de la red neuronal, se ha hecho uso del software \textit{Darknet}, disponible en \cite{darknetgithub}, el cual requiere a su vez de una tarjeta gráfica \textit{NVIDIA} con soporte para las plataformas de cómputo \textit{CUDA} y \textit{cuDNN}. Los requisitos mínimos de este software se listan a continuación:
+\begin{itemize}
+    \item CMake 3.18 o superior.
+    \item OpenCV 2.4 o superior.
+    \item CUDA 10.2 o superior y cuDNN 8.0.2 o superior.
+    \item Una tarjeta gráfica NVIDIA con soporte para CUDA y cuDNN con capacidad de cómputo superior a 3.0. El valor de este índice se puede consultar en la página oficial de NVIDIA.
+\end{itemize}
+Adicionalmente, el autor del repositorio recomienda el uso de tarjetas gráficas con más de 10 GB de memoria VRAM.
+
+
+

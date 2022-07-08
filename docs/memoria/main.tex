@@ -1,0 +1,240 @@
+\documentclass[a4paper,11pt]{book}
+%\documentclass[a4paper,11pt]{article}
+\usepackage{listings}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+
+\usepackage{xparse,mathtools}
+
+\DeclarePairedDelimiterX{\rvect}[1]{[}{]}{\,\makervect{#1}\,}
+
+\ExplSyntaxOn
+\NewDocumentCommand{\makervect}{m}
+ {
+  \seq_set_split:Nnn \l_tmpa_seq { , } { #1 }
+  \begin{matrix}
+  \seq_use:Nn \l_tmpa_seq { & }
+  \end{matrix}
+ }
+\ExplSyntaxOff
+
+
+
+\decimalpoint
+\usepackage{dcolumn}
+\newcolumntype{.}{D{.}{\esperiod}{-1}}
+\makeatletter
+\addto\shorthandsspanish{\let\esperiod\es@period@code}
+\makeatother
+
+
+\RequirePackage{verbatim}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{afterpage}
+\usepackage{pdfpages}
+\usepackage{longtable}
+
+\usepackage[pdfborder={000}]{hyperref} %referencia
+
+
+
+% ********************************************************************
+% Re-usable information
+% *******ó********í***************************************************
+\newcommand{\myTitle}{Segmentación de Nadadores en Piscinas con Sistemas de Captación de Imágenes y Vídeo\xspace}
+\newcommand{\myDegree}{Grado en ingeniería informática\xspace}
+\newcommand{\myName}{José Alberto Gómez García\xspace}
+\newcommand{\myProf}{Rafael Molina Soriano\xspace}
+\newcommand{\myFaculty}{Escuela Técnica Superior de Ingenierías Informática y de
+Telecomunicación\xspace}
+\newcommand{\myFacultyShort}{E.T.S. de Ingenierías Informática y de
+Telecomunicación\xspace}
+\newcommand{\myDepartment}{Departamento de ciencias de la computación e inteligencia artificial\xspace}
+\newcommand{\myUni}{\protect{Universidad de Granada}\xspace}
+\newcommand{\myLocation}{Granada\xspace}
+\newcommand{\myTime}{\today\xspace}
+\newcommand{\myVersion}{Version 0.1\xspace}
+
+\usepackage{url}
+\usepackage{colortbl,longtable}
+\usepackage[stable]{footmisc}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LO]{\leftmark}
+\fancyhead[RE]{\rightmark}
+\fancyhead[RO,LE]{\textbf{\thepage}}
+\renewcommand{\chaptermark}[1]{\markboth{\textbf{#1}}{}}
+\renewcommand{\sectionmark}[1]{\markright{\textbf{\thesection. #1}}}
+
+\setlength{\headheight}{1.5\headheight}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+%Definimos los tipos teorema, ejemplo y definición podremos usar estos tipos
+%simplemente poniendo \begin{teorema} \end{teorema} ...
+\newtheorem{teorema}{Teorema}[chapter]
+\newtheorem{ejemplo}{Ejemplo}[chapter]
+\newtheorem{definicion}{Definición}[chapter]
+
+\definecolor{gray97}{gray}{.97}
+\definecolor{gray75}{gray}{.75}
+\definecolor{gray45}{gray}{.45}
+\definecolor{gray30}{gray}{.94}
+
+\lstset{ frame=Ltb,
+     framerule=0.5pt,
+     aboveskip=0.5cm,
+     framextopmargin=3pt,
+     framexbottommargin=3pt,
+     framexleftmargin=0.1cm,
+     framesep=0pt,
+     rulesep=.4pt,
+     backgroundcolor=\color{gray97},
+     rulesepcolor=\color{black},
+     %
+     stringstyle=\ttfamily,
+     showstringspaces = false,
+     basicstyle=\scriptsize\ttfamily,
+     commentstyle=\color{gray45},
+     keywordstyle=\bfseries,
+     %
+     numbers=left,
+     numbersep=6pt,
+     numberstyle=\tiny,
+     numberfirstline = false,
+     breaklines=true,
+   }
+ 
+% minimizar fragmentado de listados
+\lstnewenvironment{listing}[1][]
+   {\lstset{#1}\pagebreak[0]}{\pagebreak[0]}
+
+\lstdefinestyle{CodigoC}
+   {
+	basicstyle=\scriptsize,
+	frame=single,
+	language=C,
+	numbers=left
+   }
+\lstdefinestyle{CodigoC++}
+   {
+	basicstyle=\small,
+	frame=single,
+	backgroundcolor=\color{gray30},
+	language=C++,
+	numbers=left
+   }
+\lstdefinestyle{CodigoPython}
+   {
+	basicstyle=\scriptsize,
+	frame=single,
+	language=Python,
+	numbers=left
+   }
+ 
+\lstdefinestyle{Consola}
+   {basicstyle=\scriptsize\bf\ttfamily,
+    backgroundcolor=\color{gray30},
+    frame=single,
+    numbers=none
+   }
+
+
+\newcommand{\bigrule}{\titlerule[0.5mm]}
+
+
+%Para conseguir que en las páginas en blanco no ponga cabeceras
+\makeatletter
+\def\clearpage{%
+  \ifvmode
+    \ifnum \@dbltopnum =\m@ne
+      \ifdim \pagetotal <\topskip
+        \hbox{}
+      \fi
+    \fi
+  \fi
+  \newpage
+  \thispagestyle{empty}
+  \write\m@ne{}
+  \vbox{}
+  \penalty -\@Mi
+}
+\makeatother
+
+% La plantilla de por sí le pone unos márgenes exagerados. Por si acaso luego quisiera reducirlos.
+%\addtolength{\topmargin}{-.875in}
+
+\usepackage{changes}
+\definechangesauthor[name={Rafael Molina}, color=red]{rms}
+%\setremarkmarkup{(#2)}https://es.overleaf.com/project/5c7e45c95d915d7081d0571c
+\def\adr{\added[id=rms]}
+\def\der{\deleted[id=rms]}
+\def\rer{\replaced[id=rms]}
+
+\definecolor{correccionjmd}{RGB}{255,40,120}
+%\definechangesauthor[name={Javier Mateos}, color=OliveGreen]{jmd}
+\definechangesauthor[name={Jose Alberto}, color=correccionjmd]{jmd}
+\def\adj{\added[id=modej]}
+\def\rej{\replaced[id=modej]}
+\newcommand{\dej}[1]{\deleted[id=modej]{#1}}
+%\renewcommand{\rej}[2]{#1}
+%\renewcommand{\adj}[1]{#1}
+%\renewcommand{\dej}[1]{}
+
+\definechangesauthor[name={Fernando Perez}, color=orange]{fpb}
+%\setremarkmarkup{(#2)}
+\def\adp{\added[id=fpb]}
+\def\dep{\deleted[id=fpb]}
+\def\rep{\replaced[id=fpb]}
+\usepackage{todonotes}
+\usepackage{multirow}
+
+\usepackage{pdfpages}
+\begin{document}
+
+    \hypersetup{
+        pdfauthor = {\myName - modej@correo.ugr.es},
+        pdftitle = {\myTitle},
+        pdfsubject = {Detección de objetos},
+        pdfkeywords = {Detección de nadadores, Frecuencia de nado, Procesamiento de imágenes, Espacios de color, YCbCr, Sustracción de fondos, GSoC, Redes neuronales convolucionales, Aprendizaje profundo, YOLO},
+        pdfcreator = {\myName},
+        pdfproducer = {\myName},
+    }
+
+    \input{portada}
+    \input{prefacio}
+    \includepdf[pages=-]{autorizo_biblioteca_ja_signed.pdf}
+    \includepdf[pages=-]{autorizo_rafa_defensa_signed.pdf}
+	\newpage
+	%\setcounter{tocdepth}{3}
+	\tableofcontents
+	
+
+	% Índice de imágenes y tablas
+	%\newpage
+	\listoffigures
+
+	% Si hay suficientes se incluirá dicho índice
+	\listoftables 
+	%\newpage
+
+	%Introducción 
+	\input{secciones/capitulo1}
+	\input{secciones/capitulo2}
+	\input{secciones/capitulo3}
+	\input{secciones/capitulo4}
+	\input{secciones/capitulo5}
+	\input{secciones/capitulo6}
+	
+	\input{secciones/anexo1}
+	\thispagestyle{empty}
+	\input{secciones/anexo2}
+	\thispagestyle{empty}
+
+
+    % Bibliografía
+    \newpage
+	\bibliography{bibliografia}
+	\bibliographystyle{plain}
+	\end{document}
