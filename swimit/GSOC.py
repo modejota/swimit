@@ -83,7 +83,7 @@ class GSOC:
         necesita_redimension = (ancho != RV.HALF_WIDTH or alto != RV.HALF_HEIGHT)
         fps_factor = 1
         if fps >= RV.NORMAL_FRAME_RATE:
-            fps_factor = math.ceil(fps / RV.NORMAL_FRAME_RATE)
+            fps_factor = math.ceil(fps / RV.NORMAL_FRAME_RATE)  # Ignorar algunos fotogramas
             processing_frames = int(frames // fps_factor)
 
         if self.args.calle < 1 or self.args.calle > 8:
