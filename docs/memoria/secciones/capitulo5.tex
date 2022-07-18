@@ -175,7 +175,7 @@ Para poder determinar que método ofrece predicciones más fiables se ha calcula
 
 Utilizaremos esta métrica ya que nos indica la proporción del error con respecto al valor exacto de la medición, permitiéndonos comparar los errores que se producen en distintas pruebas. Nótese que no sería igual cometer un error de predicción de 2 segundos en una prueba de nado de 10 segundos, que en una prueba que durase una hora.
 
-Esta información se puede consultar en la tabla \ref{tab:tablaerrorestiemposcap5}. Para obtener una visión más general en función del estilo de nado, se han calculado los errores relativos medios para cada uno de ellos, así como el error absoluto relativo medio total. Estos valores se pueden consultar en la tabla \ref{tab:tablatiemposmedioscap5}. Nótese que el error absoluto relativo es muy pequeño en todos los casos, por lo que ambas técnicas realizan una predicción del tiempo empleado en recorrer la ROI bastante precisa. Sin embargo, YOLO ofrece menor error absoluto relativo para todos los estilos de nado a excepción de mariposa, así como un menor error absoluto relativo  medio total. Por tanto, se puede concluir que YOLO ofrece mejores predicciones del tiempo que se tarda en recorrer cada región de interés.
+Esta información se puede consultar en la tabla \ref{tab:tablaerrorestiemposcap5}. Para obtener una visión más general en función del estilo de nado, se han calculado los errores absolutos relativos medios para cada uno de ellos, así como el error absoluto relativo medio total. Estos valores se pueden consultar en la tabla \ref{tab:tablatiemposmedioscap5}. Nótese que el error absoluto relativo es muy pequeño en todos los casos, por lo que ambas técnicas realizan una predicción del tiempo empleado en recorrer la ROI bastante precisa. Sin embargo, YOLO ofrece menor error absoluto relativo para todos los estilos de nado a excepción de mariposa, así como un menor error absoluto relativo  medio total. Por tanto, se puede concluir que YOLO ofrece mejores predicciones del tiempo que se tarda en recorrer cada región de interés.
 
 \begin{table}[]
     \centering
@@ -212,7 +212,7 @@ Esta información se puede consultar en la tabla \ref{tab:tablaerrorestiemposcap
          Espalda & 0.017900 & \textbf{0.016695} \\
          Media & 0.039603 & \textbf{0.025062} \\ \hline
     \end{tabular}
-    \caption{Comparativa entre los errores relativos medios de los tiempos estimados.}
+    \caption{Comparativa entre los errores absolutos relativos medios de los tiempos estimados.}
     \label{tab:tablatiemposmedioscap5}
 \end{table} 
 
@@ -255,7 +255,7 @@ Analicemos los resultados presentados para cada estilo de nado.
     \item Para el nado en espalda, GSoC no es capaz de acertar ninguna de las dos predicciones. Para el segundo caso, el error cometido es bastante notable, al estimar 5 brazadas menos de las realmente realizadas. YOLO es capaz de acertar la segunda predicción, mientras que en la primera estima una brazada de menos.
 \end{itemize}
 
-En la tabla \ref{tab:tablaerroresbrazadascap5} se muestra el error absoluto relativo cometido por cada aproximación a la hora de estimar el número de brazadas que tienen lugar en cada región de interés. Como se puede observar rápidamente, la aproximación propuesta en el capítulo \ref{cap:capitulo3} presenta un mayor error absoluto relativo que la aproximación propuesta en el capítulo \ref{cap:capitulo4} en la mayoría de casos donde no es capaz de acertar el número de brazadas realizadas. En la tabla \ref{tab:tablaerroresmediosbrazadas} se presentan los errores relativos medios en función del estilo de nado y el error absoluto relativo medio total. El detector YOLO ofrece un error absoluto relativo medio menor en todos los estilos de nado, siendo este capaz de no cometer ningún error a la hora de predecir brazadas en estilo crol. Nótese que el detector GSoC sufre especialmente a la hora de detectar brazadas del nadador en estilo braza y de espalda. 
+En la tabla \ref{tab:tablaerroresbrazadascap5} se muestra el error absoluto relativo cometido por cada aproximación a la hora de estimar el número de brazadas que tienen lugar en cada región de interés. Como se puede observar rápidamente, la aproximación propuesta en el capítulo \ref{cap:capitulo3} presenta un mayor error absoluto relativo que la aproximación propuesta en el capítulo \ref{cap:capitulo4} en la mayoría de casos donde no es capaz de acertar el número de brazadas realizadas. En la tabla \ref{tab:tablaerroresmediosbrazadas} se presentan los errores absolutos relativos medios en función del estilo de nado y el error absoluto relativo medio total. El detector YOLO ofrece un error absoluto relativo medio menor en todos los estilos de nado, siendo este capaz de no cometer ningún error a la hora de predecir brazadas en estilo crol. Nótese que el detector GSoC sufre especialmente a la hora de detectar brazadas del nadador en estilo braza y de espalda. 
 
 \begin{table}[]
     \centering
@@ -292,7 +292,7 @@ En la tabla \ref{tab:tablaerroresbrazadascap5} se muestra el error absoluto rela
          Espalda & 0.2765 & \textbf{0.0417} \\
          Media & 0.1330 & \textbf{0.0178} \\ \hline
     \end{tabular}
-    \caption{Comparativa entre los errores relativos medios del número de brazadas estimadas.}
+    \caption{Comparativa entre los errores absolutos relativos medios del número de brazadas estimadas.}
     \label{tab:tablaerroresmediosbrazadas}
 \end{table} 
 
@@ -324,7 +324,7 @@ Una vez hemos comprobado la bondad en las estimaciones del tiempo que se emplea 
     \label{tab:frecuenciasmedianadoest}
 \end{table}
 
-En la tabla \ref{tab:tablaerroresprediccionesfrecuencia} se muestran los errores relativos para cada una de las pruebas evaluadas, remarcando en negrita el menor error absoluto relativo en cada caso. Por otra parte, en la tabla \ref{tab:tablaerroresmediosprediccionesfrecuencia} se muestran los errores relativos medios para cada uno de los estilos de nado, así como el error absoluto relativo medio total.
+En la tabla \ref{tab:tablaerroresprediccionesfrecuencia} se muestran los errores absolutos relativos para cada una de las pruebas evaluadas, remarcando en negrita el menor error absoluto relativo en cada caso. Por otra parte, en la tabla \ref{tab:tablaerroresmediosprediccionesfrecuencia} se muestran los errores absolutos relativos medios para cada uno de los estilos de nado, así como el error absoluto relativo medio total.
 
 \begin{table}[]
     \centering
@@ -361,10 +361,10 @@ En la tabla \ref{tab:tablaerroresprediccionesfrecuencia} se muestran los errores
          Espalda & 0.2764 & \textbf{0.0436} \\
          Media & 0.1311 & \textbf{0.0385} \\ \hline
     \end{tabular}
-    \caption{Comparativa entre los errores relativos medios de las frecuencias medias de nado estimadas.}
+    \caption{Comparativa entre los errores absolutos relativos medios de las frecuencias medias de nado estimadas.}
     \label{tab:tablaerroresmediosprediccionesfrecuencia}
 \end{table} 
 
-Como se puede observar en la tabla \ref{tab:tablaerroresmediosprediccionesfrecuencia}, YOLO ofrece un menor error absoluto relativo medio en todas los estilos de nado. A excepción del estilo mariposa, YOLO ofrece una reducción bastante considerable de los errores relativos con respecto de GSoC. Se puede observar que el error absoluto relativo medio total de YOLO es unas 3.4 veces menor, aproximadamente. Esto es un indicativo de que las predicciones realizadas por YOLO se acercan más a la realidad que las realizadas por GSoC.
+Como se puede observar en la tabla \ref{tab:tablaerroresmediosprediccionesfrecuencia}, YOLO ofrece un menor error absoluto relativo medio en todas los estilos de nado. A excepción del estilo mariposa, YOLO ofrece una reducción bastante considerable de los errores absolutos relativos con respecto de GSoC. Se puede observar que el error absoluto relativo medio total de YOLO es unas 3.4 veces menor, aproximadamente. Esto es un indicativo de que las predicciones realizadas por YOLO se acercan más a la realidad que las realizadas por GSoC.
 
 En virtud de los experimentos realizados, se puede concluir que el método propuesto es capaz de predecir con un buen nivel de acierto tanto el tiempo que se tarda en recorrer una región de interés como el número de brazadas que hicieron falta para ello, y por tanto, la frecuencia media de nado. En concreto, los experimentos indican que YOLO ofrece un rendimiento superior frente a GSoC al realizar la estimación de la frecuencia media de nado con nivel de error considerablemente menor.
